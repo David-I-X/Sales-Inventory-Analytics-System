@@ -1,0 +1,10 @@
+﻿backend/venv/
+node_modules/
+frontend/node_modules/
+*.key
+*.pem
+*.pub
+ssh-key-*
+.git
+.gitignore
+backend/.env.production

@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SaaS Vertical — Dashboard de Aprendizaje & Inspección ML</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --panel-bg: #1e293b;
+      --card-bg: #334155;
+      --accent-blue: #38bdf8;
+      --accent-green: #4ade80;
+      --accent-purple: #c084fc;
+      --accent-amber: #fbbf24;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #475569;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      padding: 24px;
+      line-height: 1.5;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 24px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-badge {
+      background: linear-gradient(135deg, #0284c7, #9333ea);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+    .dev-badge {
+      background-color: rgba(251, 191, 36, 0.2);
+      color: var(--accent-amber);
+      border: 1px solid var(--accent-amber);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .config-bar {
+      background: var(--panel-bg);
+      padding: 16px 20px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .input-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 220px; }
+    .input-group label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
+    .input-group input {
+      background: var(--bg-dark);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-family: monospace;
+    }
+    button.btn {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    button.btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    button.btn-secondary { background: var(--card-bg); border: 1px solid var(--border-color); }
+    
+    /* Pipeline Diagram */
+    .pipeline-section {
+      background: var(--panel-bg);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid var(--border-color);
+      margin-bottom: 24px;
+    }
+    .pipeline-title { font-size: 1rem; font-weight: 600; margin-bottom: 16px; color: var(--accent-blue); }
+    .pipeline-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+    .pipeline-step {
+      background: var(--card-bg);
+      padding: 16px;
+      border-radius: 8px;
+      border-left: 4px solid var(--accent-blue);
+      position: relative;
+    }
+    .pipeline-step.step-2 { border-left-color: var(--accent-purple); }
+    .pipeline-step.step-3 { border-left-color: var(--accent-amber); }
+    .pipeline-step.step-4 { border-left-color: var(--accent-green); }
+    .step-num { font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; }
+    .step-name { font-weight: 600; font-size: 0.95rem; margin: 4px 0; }
+    .step-desc { font-size: 0.8rem; color: var(--text-muted); }
+
+    /* Tabs & Content Grid */
+    .grid-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+    @media (max-width: 1024px) { .grid-layout { grid-template-columns: 1fr; } }
+    
+    .card-panel {
+      background: var(--panel-bg);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid var(--border-color);
+      margin-bottom: 24px;
+    }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .alert-card {
+      background: var(--card-bg);
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border-left: 4px solid var(--accent-green);
+    }
+    .alert-card.hot_lead { border-left-color: var(--accent-amber); }
+    .alert-card.demand_forecast { border-left-color: var(--accent-blue); }
+    .alert-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+    .badge {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      font-weight: 700;
+      background: rgba(255,255,255,0.1);
+    }
+    .badge.hot_lead { background: rgba(251, 191, 36, 0.2); color: var(--accent-amber); }
+    .badge.demand_forecast { background: rgba(56, 189, 248, 0.2); color: var(--accent-blue); }
+    .alert-msg { font-size: 0.95rem; font-weight: 500; }
+    .alert-time { font-size: 0.75rem; color: var(--text-muted); }
+
+    .lead-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: var(--card-bg);
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .lead-info { display: flex; flex-direction: column; }
+    .lead-name { font-weight: 600; font-size: 0.9rem; }
+    .lead-reason { font-size: 0.75rem; color: var(--text-muted); }
+    .lead-score {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--accent-amber);
+      background: rgba(251, 191, 36, 0.1);
+      padding: 4px 10px;
+      border-radius: 8px;
+    }
+    
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-green); display: inline-block; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span class="brand-badge">SaaS Vertical</span>
+      <h2>Dashboard de Aprendizaje Backend & Motor ML</h2>
+    </div>
+    <div style="display:flex; gap:12px; align-items:center;">
+      <span class="dev-badge">🛠️ MÓDULO EDUCATIVO (DEV ONLY)</span>
+      <span id="server-status"><span class="status-dot"></span> Conectado :8000</span>
+    </div>
+  </header>
+
+  <div class="config-bar">
+    <div class="input-group">
+      <label>API Key del Tenant (Header x-api-key)</label>
+      <input type="text" id="api-key-input" value="sk_live_-Ft1feYOzsP5A5CvbP9Ubou2VO2Uud2I">
+    </div>
+    <div class="input-group" style="max-width: 180px;">
+      <label>Tenant Activo</label>
+      <input type="text" id="tenant-name" value="Tec360 (schema: tec360)" readonly>
+    </div>
+    <div style="display: flex; gap: 8px; margin-top: auto;">
+      <button class="btn" onclick="triggerMlPipeline()">⚡ Ejecutar Pipeline ML</button>
+      <button class="btn btn-secondary" onclick="loadDashboardData()">🔄 Actualizar Datos</button>
+    </div>
+  </div>
+
+  <!-- Diagrama Interactivo del Pipeline -->
+  <div class="pipeline-section">
+    <div class="pipeline-title">🧠 Flujo Pedagógico del Motor ML (Batch Nocturno)</div>
+    <div class="pipeline-grid">
+      <div class="pipeline-step step-1">
+        <div class="step-num">Paso 1</div>
+        <div class="step-name">📊 Feature Engineering</div>
+        <div class="step-desc">Extrae histórico de compras, CRM WhatsApp y quincenas colombianas desde Postgres.</div>
+      </div>
+      <div class="pipeline-step step-2">
+        <div class="step-num">Paso 2</div>
+        <div class="step-name">🤖 Inferencia ML</div>
+        <div class="step-desc">Ejecuta XGBoost (Lead Scoring) y Regresión (Predicción de Demanda).</div>
+      </div>
+      <div class="pipeline-step step-3">
+        <div class="step-num">Paso 3</div>
+        <div class="step-name">🗣️ Traducción NLP</div>
+        <div class="step-desc">Convierte scores numéricos en frases claras en español para el empresario.</div>
+      </div>
+      <div class="pipeline-step step-4">
+        <div class="step-num">Paso 4</div>
+        <div class="step-name">💾 Persistencia Aislada</div>
+        <div class="step-desc">Guarda las alertas en la tabla <code style="color:var(--accent-green)">tec360.ml_alerts</code> del schema.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-layout">
+    <!-- Panel Izquierdo: Alertas traducidas -->
+    <div class="card-panel">
+      <div class="panel-header">
+        <h3>📢 Alertas en Lenguaje Natural Traducidas (`ml_alerts`)</h3>
+        <span class="badge" id="alert-count-badge">0 Alertas</span>
+      </div>
+      <div id="alerts-container">
+        <div style="text-align: center; color: var(--text-muted); padding: 20px;">
+          Cargando alertas del backend...
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel Derecho: Ranking de Leads & Demanda -->
+    <div>
+      <div class="card-panel">
+        <div class="panel-header">
+          <h3>🔥 Top Leads Calientes (XGBoost)</h3>
+        </div>
+        <div id="leads-container">
+          <div style="text-align: center; color: var(--text-muted); padding: 10px;">Cargando ranking...</div>
+        </div>
+      </div>
+
+      <div class="card-panel">
+        <div class="panel-header">
+          <h3>📈 Predicción de Demanda (14 Días)</h3>
+        </div>
+        <div id="forecast-container">
+          <div style="text-align: center; color: var(--text-muted); padding: 10px;">Cargando predicción...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:8000/api/v1";
+
+    function getApiKey() {
+      return document.getElementById("api-key-input").value.trim();
+    }
+
+    async function loadDashboardData() {
+      const apiKey = getApiKey();
+      
+      // Load alerts
+      try {
+        const resAlerts = await fetch(`${API_BASE}/ml/alerts`, {
+          headers: { "x-api-key": apiKey }
+        });
+        if (resAlerts.ok) {
+          const alerts = await resAlerts.json();
+          renderAlerts(alerts);
+        } else {
+          document.getElementById("alerts-container").innerHTML = `<div style="color:#ef4444">Error al cargar alertas: HTTP ${resAlerts.status}</div>`;
+        }
+      } catch (e) {
+        document.getElementById("alerts-container").innerHTML = `<div style="color:#ef4444">Backend fuera de línea o error de red.</div>`;
+      }
+
+      // Load leads ranking
+      try {
+        const resLeads = await fetch(`${API_BASE}/ml/leads/ranking`, {
+          headers: { "x-api-key": apiKey }
+        });
+        if (resLeads.ok) {
+          const leadsData = await resLeads.json();
+          renderLeads(leadsData.top_leads || []);
+        }
+      } catch (e) { console.error(e); }
+
+      // Load forecast
+      try {
+        const resForecast = await fetch(`${API_BASE}/ml/forecast`, {
+          headers: { "x-api-key": apiKey }
+        });
+        if (resForecast.ok) {
+          const forecastData = await resForecast.json();
+          renderForecast(forecastData.predictions || []);
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    function renderAlerts(alerts) {
+      const container = document.getElementById("alerts-container");
+      document.getElementById("alert-count-badge").innerText = `${alerts.length} Alertas`;
+      
+      if (!alerts || alerts.length === 0) {
+        container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">No hay alertas generadas aún. ¡Presiona 'Ejecutar Pipeline ML'!</div>`;
+        return;
+      }
+
+      container.innerHTML = alerts.map(a => `
+        <div class="alert-card ${a.alert_type}">
+          <div class="alert-header">
+            <span class="badge ${a.alert_type}">${a.alert_type}</span>
+            <span class="alert-time">${new Date(a.generated_at).toLocaleTimeString()}</span>
+          </div>
+          <div class="alert-msg">${a.message}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderLeads(leads) {
+      const container = document.getElementById("leads-container");
+      if (!leads || leads.length === 0) {
+        container.innerHTML = `<div style="color: var(--text-muted); font-size:0.85rem;">No hay leads analizados aún.</div>`;
+        return;
+      }
+      container.innerHTML = leads.map(l => `
+        <div class="lead-item">
+          <div class="lead-info">
+            <span class="lead-name">${l.name}</span>
+            <span class="lead-reason">${l.reason}</span>
+          </div>
+          <div class="lead-score">${l.probability_percentage}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderForecast(predictions) {
+      const container = document.getElementById("forecast-container");
+      if (!predictions || predictions.length === 0) {
+        container.innerHTML = `<div style="color: var(--text-muted); font-size:0.85rem;">No hay predicciones activas aún.</div>`;
+        return;
+      }
+      container.innerHTML = predictions.map(p => `
+        <div class="lead-item" style="border-left: 3px solid var(--accent-blue);">
+          <div class="lead-info">
+            <span class="lead-name">${p.item_name} (${p.item_sku})</span>
+            <span class="lead-reason">${p.recommended_action}</span>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-weight:700; color:var(--accent-blue);">${p.predicted_demand_14d} unidades</div>
+            <div style="font-size:0.7rem; color:var(--text-muted);">Stock actual: ${p.current_stock}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function triggerMlPipeline() {
+      const apiKey = getApiKey();
+      const btn = event.target;
+      btn.innerText = "⏳ Procesando Pipeline ML...";
+      btn.disabled = true;
+      try {
+        const res = await fetch(`${API_BASE}/ml/trigger`, {
+          method: "POST",
+          headers: { "x-api-key": apiKey }
+        });
+        const data = await res.json();
+        alert(`✅ Pipeline completado!\n${data.message}`);
+        await loadDashboardData();
+      } catch (e) {
+        alert("❌ Error ejecutando el pipeline: " + e.message);
+      } finally {
+        btn.innerText = "⚡ Ejecutar Pipeline ML";
+        btn.disabled = false;
+      }
+    }
+
+    // Initial load
+    window.addEventListener("DOMContentLoaded", loadDashboardData);
+  </script>
+</body>
+</html>

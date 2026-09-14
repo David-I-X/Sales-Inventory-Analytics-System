@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+    networks:
+      - sas_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: always
+    env_file:
+      - ./backend/.env.production
+    environment:
+      - DATABASE_URL=postgresql://sasadmin:saspassword@db:5432/sas_vertical
+      - DB_POOL_SIZE=15
+      - DB_MAX_OVERFLOW=30
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - sas_network
+
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: sasadmin
+      POSTGRES_PASSWORD: saspassword
+      POSTGRES_DB: sas_vertical
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sasadmin -d sas_vertical"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks:
+      - sas_network
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  sas_network:
+    driver: bridge

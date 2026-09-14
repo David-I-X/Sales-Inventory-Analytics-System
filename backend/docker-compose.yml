@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: sasadmin
+      POSTGRES_PASSWORD: saspassword
+      POSTGRES_DB: sas_vertical
+    ports:
+      - "5433:5432" # Puerto 5433 para evitar colisión con Tec360 (que usa 5432)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

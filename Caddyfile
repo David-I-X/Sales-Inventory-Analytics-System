@@ -1,0 +1,20 @@
+﻿# Si tienes dominio, reemplaza :80 por tu dominio (ej: app.tudominio.com)
+# Caddy obtendrá y renovará automáticamente los certificados SSL Let's Encrypt.
+:80 {
+    # Proxy inverso hacia el backend FastAPI (que sirve la API y la SPA)
+    reverse_proxy backend:8080 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    # Habilitar compresión Gzip / Zstandard para máxima velocidad
+    encode zstd gzip
+
+    # Logs de acceso en consola
+    log {
+        output stdout
+        format console
+    }
+}
