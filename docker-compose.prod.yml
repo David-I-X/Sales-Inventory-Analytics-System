@@ -24,7 +24,7 @@ services:
     env_file:
       - ./backend/.env.production
     environment:
-      - DATABASE_URL=postgresql://sasadmin:saspassword@db:5432/sas_vertical
+      - DATABASE_URL=postgresql+psycopg2://sasadmin:saspassword@db:5432/sas_vertical
       - DB_POOL_SIZE=15
       - DB_MAX_OVERFLOW=30
     depends_on:

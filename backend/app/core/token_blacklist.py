@@ -56,9 +56,11 @@ class TokenBlacklist:
             return True
 
         # Slow path: PostgreSQL
-        statement = select(TokenBlacklistEntry).where(TokenBlacklistEntry.jti == jti)
-        entry = session.exec(statement).first()
-        if entry:
+        result = session.execute(
+            text("SELECT 1 FROM public.token_blacklist WHERE jti = :jti"),
+            {"jti": jti}
+        ).first()
+        if result:
             # Rehidratar caché
             self._cache[jti] = True
             return True
@@ -71,13 +73,12 @@ class TokenBlacklist:
         Se ejecuta al arrancar el servidor para restaurar el estado post-reinicio.
         Retorna la cantidad de JTIs cargados.
         """
-        statement = select(TokenBlacklistEntry).where(
-            TokenBlacklistEntry.expires_at > datetime.utcnow()
+        result = session.execute(
+            text("SELECT jti FROM public.token_blacklist WHERE expires_at > NOW()")
         )
-        entries = session.exec(statement).all()
         count = 0
-        for entry in entries:
-            self._cache[entry.jti] = True
+        for row in result:
+            self._cache[row[0]] = True
             count += 1
         logger.info(f"[Blacklist] Cargados {count} JTIs activos desde PostgreSQL")
         return count
@@ -88,8 +89,7 @@ class TokenBlacklist:
         Se ejecuta periódicamente (cada hora) para mantener la tabla limpia.
         """
         result = session.execute(
-            text("DELETE FROM public.token_blacklist WHERE expires_at < :now"),
-            {"now": datetime.utcnow()}
+            text("DELETE FROM public.token_blacklist WHERE expires_at < NOW()")
         )
         deleted = result.rowcount
         if deleted > 0:
