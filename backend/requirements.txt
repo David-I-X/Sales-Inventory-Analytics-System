@@ -10,10 +10,7 @@ passlib[bcrypt]>=1.7.4
 bcrypt==4.0.1
 python-jose[cryptography]>=3.3.0
 apscheduler>=3.10.4
-# ML Dependencies (can be split later if needed)
+# ML & NLP Dependencies
 sentence-transformers>=2.3.1
 scikit-learn>=1.4.0
-lightgbm>=4.3.0
-xgboost>=2.0.3
-pandas>=2.2.0
 cachetools>=5.3.0
