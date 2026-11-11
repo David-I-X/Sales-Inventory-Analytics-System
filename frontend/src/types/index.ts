@@ -4,8 +4,34 @@ export interface User {
   full_name: string;
   role: 'admin' | 'viewer';
   tenant_id: number;
+  enabled_modules?: string[];
   is_active: boolean;
   created_at: string;
+}
+
+export interface ModuleStatus {
+  slug: string;
+  name: string;
+  description: string;
+  category: string;
+  icon: string;
+  dependencies: string[];
+  is_enabled: boolean;
+  unmet_dependencies: string[];
+}
+
+export interface ModuleCatalogResponse {
+  modules: ModuleStatus[];
+  total_active: number;
+  total_available: number;
+}
+
+export interface ModuleToggleResponse {
+  slug: string;
+  name: string;
+  is_enabled: boolean;
+  enabled_modules: string[];
+  message: string;
 }
 
 export interface TokenPair {

@@ -11,15 +11,16 @@ import {
   IconUserPlus, 
   IconUser, 
   IconLogout, 
-  IconLayoutSidebarLeftCollapse,
-  IconLayoutSidebarLeftExpand,
-  IconBuildingStore
+  IconLayoutSidebarLeftCollapse, 
+  IconLayoutSidebarLeftExpand, 
+  IconBuildingStore,
+  IconApps
 } from '@tabler/icons-react';
 import { useAuth } from '../../context/AuthContext';
 import { ThemeToggle } from '../ui/ThemeToggle';
 
 export const Sidebar: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, hasModule } = useAuth();
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('sidebar_collapsed') === 'true';
   });
@@ -82,39 +83,59 @@ export const Sidebar: React.FC = () => {
             <IconUsers size={18} className="sidebar-icon shrink-0" />
             {!collapsed && <span className="sidebar-text">Contactos</span>}
           </NavLink>
-          <NavLink to="/invoices" className={navClass}>
-            <IconFileInvoice size={18} className="sidebar-icon shrink-0" />
-            {!collapsed && <span className="sidebar-text">Facturas DIAN</span>}
-          </NavLink>
-          <NavLink to="/inventory" className={navClass}>
-            <IconPackages size={18} className="sidebar-icon shrink-0" />
-            {!collapsed && <span className="sidebar-text">Inventario</span>}
-          </NavLink>
-          <NavLink to="/purchases" className={navClass}>
-            <IconShoppingCart size={18} className="sidebar-icon shrink-0" />
-            {!collapsed && <span className="sidebar-text">Compras</span>}
-          </NavLink>
-          <NavLink to="/accounting" className={navClass}>
-            <IconReceipt2 size={18} className="sidebar-icon shrink-0" />
-            {!collapsed && <span className="sidebar-text">Contabilidad</span>}
-          </NavLink>
-          <NavLink to="/ml" className={navClass}>
-            <IconBrain size={18} className="sidebar-icon shrink-0" />
-            {!collapsed && <span className="sidebar-text">Motor IA / ML</span>}
-          </NavLink>
+
+          {/* Módulos Condicionales A la Carta */}
+          {hasModule('dian_invoicing') && (
+            <NavLink to="/invoices" className={navClass}>
+              <IconFileInvoice size={18} className="sidebar-icon shrink-0" />
+              {!collapsed && <span className="sidebar-text">Facturas DIAN</span>}
+            </NavLink>
+          )}
+
+          {hasModule('inventory') && (
+            <NavLink to="/inventory" className={navClass}>
+              <IconPackages size={18} className="sidebar-icon shrink-0" />
+              {!collapsed && <span className="sidebar-text">Inventario</span>}
+            </NavLink>
+          )}
+
+          {hasModule('purchases') && (
+            <NavLink to="/purchases" className={navClass}>
+              <IconShoppingCart size={18} className="sidebar-icon shrink-0" />
+              {!collapsed && <span className="sidebar-text">Compras</span>}
+            </NavLink>
+          )}
+
+          {hasModule('accounting') && (
+            <NavLink to="/accounting" className={navClass}>
+              <IconReceipt2 size={18} className="sidebar-icon shrink-0" />
+              {!collapsed && <span className="sidebar-text">Contabilidad</span>}
+            </NavLink>
+          )}
+
+          {(hasModule('ml_leads') || hasModule('ml_inventory')) && (
+            <NavLink to="/ml" className={navClass}>
+              <IconBrain size={18} className="sidebar-icon shrink-0" />
+              {!collapsed && <span className="sidebar-text">Motor IA / ML</span>}
+            </NavLink>
+          )}
         </div>
 
-        {user?.role === 'admin' && (
-          <div className="sidebar-section">
-            <div className="sidebar-section-title">
-              {!collapsed && <span>Administración</span>}
-            </div>
+        <div className="sidebar-section">
+          <div className="sidebar-section-title">
+            {!collapsed && <span>Configuración</span>}
+          </div>
+          <NavLink to="/modules" className={navClass}>
+            <IconApps size={18} className="sidebar-icon shrink-0 text-indigo-500" />
+            {!collapsed && <span className="sidebar-text font-medium">Herramientas</span>}
+          </NavLink>
+          {user?.role === 'admin' && (
             <NavLink to="/users" className={navClass}>
               <IconUserPlus size={18} className="sidebar-icon shrink-0" />
               {!collapsed && <span className="sidebar-text">Usuarios</span>}
             </NavLink>
-          </div>
-        )}
+          )}
+        </div>
       </nav>
 
       <div className="sidebar-footer">

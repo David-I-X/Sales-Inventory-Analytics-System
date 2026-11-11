@@ -10,6 +10,7 @@ import Accounting from './pages/Accounting';
 import MlEngine from './pages/MlEngine';
 import Users from './pages/Users';
 import Profile from './pages/Profile';
+import Modules from './pages/Modules';
 
 function App() {
   return (
@@ -55,6 +56,12 @@ function App() {
       <Route path="/ml" element={
         <AppLayout title="Motor ML">
           <MlEngine />
+        </AppLayout>
+      } />
+
+      <Route path="/modules" element={
+        <AppLayout title="Herramientas & Módulos">
+          <Modules />
         </AppLayout>
       } />
 

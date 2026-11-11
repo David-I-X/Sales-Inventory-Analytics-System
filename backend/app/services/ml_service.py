@@ -33,13 +33,19 @@ class MLBatchOrchestrator:
         """
         session.execute(text(f"SET search_path TO {tenant.schema_name}, public"))
 
-        # 1. Feature Engineering
-        contact_features = self.extractor.extract_contact_features(session)
-        demand_features = self.extractor.extract_demand_features(session)
+        modules = tenant.enabled_modules or []
 
-        # 2. Inferencia de Modelos
-        top_leads = self.scorer.predict_lead_probabilities(contact_features)
-        forecasts = self.forecaster.forecast_14_days(demand_features)
+        # 1. Lead Scoring (solo si 'ml_leads' está activo para la PyME)
+        top_leads = []
+        if "ml_leads" in modules:
+            contact_features = self.extractor.extract_contact_features(session)
+            top_leads = self.scorer.predict_lead_probabilities(contact_features)
+
+        # 2. Pronóstico de Stock (solo si 'inventory' y 'ml_inventory' están activos)
+        forecasts = []
+        if "inventory" in modules and "ml_inventory" in modules:
+            demand_features = self.extractor.extract_demand_features(session)
+            forecasts = self.forecaster.forecast_14_days(demand_features)
 
         # 3. Traducción a Lenguaje Natural y Guardado
         alerts = self.translator.generate_natural_alerts(top_leads, forecasts, session)

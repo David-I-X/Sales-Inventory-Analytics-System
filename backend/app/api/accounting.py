@@ -8,6 +8,7 @@ import csv
 
 from app.core.database import get_session
 from app.core.tenant import get_tenant_by_api_key
+from app.core.module_guard import require_module
 from app.models.tenant import Tenant
 from app.models.accounting_entry import AccountingEntry
 from app.schemas.accounting import (
@@ -20,7 +21,7 @@ from app.schemas.accounting import (
     MonthlyPnLResponse,
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_module("accounting"))])
 
 @router.get("/entries", response_model=List[AccountingEntryResponse])
 @router.get("/entries/", response_model=List[AccountingEntryResponse], include_in_schema=False)

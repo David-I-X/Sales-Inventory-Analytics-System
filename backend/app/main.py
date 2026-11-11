@@ -13,6 +13,7 @@ from app.api import suppliers
 from app.api import purchases
 from app.api import accounting
 from app.api import auth
+from app.api import modules
 from app.core.database import engine
 
 app = FastAPI(
@@ -40,6 +41,7 @@ app.include_router(purchases.router, prefix=f"{settings.API_V1_STR}/purchases", 
 app.include_router(accounting.router, prefix=f"{settings.API_V1_STR}/accounting", tags=["Accounting"])
 app.include_router(crm.router, prefix=f"{settings.API_V1_STR}/crm", tags=["CRM"])
 app.include_router(ml.router, prefix=f"{settings.API_V1_STR}/ml", tags=["Machine Learning Engine"])
+app.include_router(modules.router, prefix=f"{settings.API_V1_STR}/modules", tags=["Tools & Modules"])
 app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["Authentication"])
 
 @app.on_event("startup")
@@ -54,8 +56,13 @@ def startup_event():
     from app.core.token_blacklist import token_blacklist
     
     with Session(engine) as session:
-        # Asegurar columna webhook_secret en public.tenants
+        # Asegurar columnas modulares en public.tenants
         session.execute(text("ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS webhook_secret VARCHAR;"))
+        session.execute(text("ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS enabled_modules JSONB DEFAULT '[\"dian_invoicing\", \"accounting\", \"ml_leads\"]'::jsonb;"))
+        session.execute(text("ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS module_settings JSONB DEFAULT '{}'::jsonb;"))
+        session.execute(text("UPDATE public.tenants SET enabled_modules = '[\"dian_invoicing\", \"accounting\", \"ml_leads\"]'::jsonb WHERE enabled_modules IS NULL;"))
+        session.execute(text("UPDATE public.tenants SET module_settings = '{}'::jsonb WHERE module_settings IS NULL;"))
+        session.commit()
         
         # Crear tablas de auth en public schema
         session.execute(text('''

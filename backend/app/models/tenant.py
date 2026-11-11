@@ -1,5 +1,6 @@
-from typing import Optional, List
-from sqlmodel import SQLModel, Field, Relationship
+from typing import Optional, List, Dict, Any
+from sqlmodel import SQLModel, Field, Relationship, Column
+from sqlalchemy import JSON
 from datetime import datetime
 
 class Tenant(SQLModel, table=True):
@@ -12,6 +13,14 @@ class Tenant(SQLModel, table=True):
     webhook_url: Optional[str] = None
     webhook_secret: Optional[str] = Field(default=None)
     plan: str = Field(default="free")
+    enabled_modules: List[str] = Field(
+        default_factory=lambda: ["dian_invoicing", "accounting", "ml_leads"],
+        sa_column=Column(JSON)
+    )
+    module_settings: Dict[str, Any] = Field(
+        default_factory=dict,
+        sa_column=Column(JSON)
+    )
     is_active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     

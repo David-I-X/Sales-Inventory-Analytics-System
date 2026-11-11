@@ -10,6 +10,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  hasModule: (slug: string) => boolean;
+  updateEnabledModules: (modules: string[]) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -56,6 +58,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const hasModule = useCallback((slug: string): boolean => {
+    if (!user) return false;
+    // Si no está definido enabled_modules todavía (fallback seguro para retrocompatibilidad)
+    if (!user.enabled_modules) return true;
+    return user.enabled_modules.includes(slug);
+  }, [user]);
+
+  const updateEnabledModules = useCallback((modules: string[]) => {
+    setUser(prev => prev ? { ...prev, enabled_modules: modules } : null);
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -64,6 +77,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isAuthenticated: !!user && tokenManager.isAuthenticated(),
         login,
         logout,
+        hasModule,
+        updateEnabledModules,
       }}
     >
       {children}

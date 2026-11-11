@@ -2,7 +2,7 @@
 Schemas Pydantic para autenticación y gestión de usuarios.
 """
 from pydantic import BaseModel, EmailStr, ConfigDict
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 
@@ -35,6 +35,7 @@ class UserResponse(BaseModel):
     full_name: str
     role: str
     tenant_id: int
+    enabled_modules: List[str] = []
     is_active: bool
     created_at: datetime
 

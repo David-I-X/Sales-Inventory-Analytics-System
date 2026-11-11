@@ -151,9 +151,17 @@ def register_first_admin(user_in: UserRegister, session: Session = Depends(get_s
 
 
 @router.get("/me", response_model=UserResponse)
-def get_me(current_user: User = Depends(get_current_user)):
-    """Retorna la información del usuario autenticado."""
-    return current_user
+def get_me(
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Retorna la información del usuario autenticado junto con los módulos activos de su tenant."""
+    tenant = session.get(Tenant, current_user.tenant_id)
+    modules = tenant.enabled_modules if tenant and tenant.enabled_modules else ["dian_invoicing", "accounting", "ml_leads"]
+    
+    resp = UserResponse.model_validate(current_user)
+    resp.enabled_modules = modules
+    return resp
 
 
 @router.post("/admin/users", response_model=UserResponse)

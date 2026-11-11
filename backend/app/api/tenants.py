@@ -26,7 +26,14 @@ def register_tenant(tenant_in: TenantCreate, session: Session = Depends(get_sess
     
     # Create tenant in public schema
     webhook_secret = secrets.token_urlsafe(32)
-    tenant = Tenant(name=tenant_in.name, schema_name=tenant_in.schema_name, plan=tenant_in.plan, webhook_secret=webhook_secret)
+    init_modules = tenant_in.enabled_modules or ["dian_invoicing", "accounting", "ml_leads"]
+    tenant = Tenant(
+        name=tenant_in.name,
+        schema_name=tenant_in.schema_name,
+        plan=tenant_in.plan,
+        webhook_secret=webhook_secret,
+        enabled_modules=init_modules
+    )
     session.add(tenant)
     session.flush()
     session.commit()

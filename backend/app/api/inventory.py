@@ -7,6 +7,7 @@ from datetime import datetime
 from app.core.database import get_session
 from app.core.tenant import get_tenant_by_api_key
 from app.models.tenant import Tenant
+from app.core.module_guard import require_module
 from app.models.product import Product
 from app.models.inventory_movement import InventoryMovement
 from app.schemas.inventory import (
@@ -19,7 +20,7 @@ from app.schemas.inventory import (
     LowStockAlert,
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_module("inventory"))])
 
 def _to_product_response(p: Product) -> ProductResponse:
     stock_val = Decimal(str(p.current_stock)) * p.cost_price

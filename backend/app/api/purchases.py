@@ -6,6 +6,7 @@ from datetime import datetime
 
 from app.core.database import get_session
 from app.core.tenant import get_tenant_by_api_key
+from app.core.module_guard import require_module
 from app.models.tenant import Tenant
 from app.models.purchase import Purchase
 from app.models.supplier import Supplier
@@ -17,7 +18,7 @@ from app.schemas.inventory import (
     PurchaseResponse,
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_module("purchases"))])
 
 def _to_purchase_response(p: Purchase, supplier_name: Optional[str] = None) -> PurchaseResponse:
     return PurchaseResponse(

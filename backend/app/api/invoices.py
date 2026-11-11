@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlmodel import Session, select
 from app.core.database import get_session
 from app.core.tenant import get_tenant_by_api_key
+from app.core.module_guard import require_module
 from app.models.tenant import Tenant
 from app.models.contact import Contact
 from app.models.invoice import Invoice
@@ -15,7 +16,7 @@ from app.schemas.invoice import InvoiceCreate, InvoiceResponse
 from app.services.dian_service import dian_service
 from app.services.webhook_service import webhook_service
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_module("dian_invoicing"))])
 
 @router.post("", response_model=InvoiceResponse, include_in_schema=False)
 @router.post("/", response_model=InvoiceResponse)
@@ -85,51 +86,54 @@ async def create_invoice(
     session.add(invoice)
     session.flush()
     
-    # 5. AUTOMATIZACIÓN 1: Registrar ingreso automático en Contabilidad según modelo del tenant
-    if invoice_in.commission_amount is not None and invoice_in.commission_amount > 0:
-        # Modo Comisión: Se asienta únicamente el valor de la comisión de la plataforma
-        accounting_entry = AccountingEntry(
-            entry_type="income",
-            amount=invoice_in.commission_amount,
-            category="comisiones",
-            description=f"Comisión Factura {invoice.invoice_number} - {contact.name}",
-            reference_type="invoice",
-            reference_id=invoice.id,
-            entry_date=datetime.utcnow()
-        )
-        session.add(accounting_entry)
-    elif invoice_in.auto_accounting:
-        # Modo Venta Directa Estándar: Se asienta el 100% de la venta
-        accounting_entry = AccountingEntry(
-            entry_type="income",
-            amount=total,
-            category="ventas",
-            description=f"Factura {invoice.invoice_number} - {contact.name}",
-            reference_type="invoice",
-            reference_id=invoice.id,
-            entry_date=datetime.utcnow()
-        )
-        session.add(accounting_entry)
+    # 5. AUTOMATIZACIÓN 1: Registrar ingreso contable SOLO si el módulo 'accounting' está activo
+    modules = tenant.enabled_modules or []
+    if "accounting" in modules:
+        if invoice_in.commission_amount is not None and invoice_in.commission_amount > 0:
+            # Modo Comisión: Se asienta únicamente el valor de la comisión de la plataforma
+            accounting_entry = AccountingEntry(
+                entry_type="income",
+                amount=invoice_in.commission_amount,
+                category="comisiones",
+                description=f"Comisión Factura {invoice.invoice_number} - {contact.name}",
+                reference_type="invoice",
+                reference_id=invoice.id,
+                entry_date=datetime.utcnow()
+            )
+            session.add(accounting_entry)
+        elif invoice_in.auto_accounting:
+            # Modo Venta Directa Estándar: Se asienta el 100% de la venta
+            accounting_entry = AccountingEntry(
+                entry_type="income",
+                amount=total,
+                category="ventas",
+                description=f"Factura {invoice.invoice_number} - {contact.name}",
+                reference_type="invoice",
+                reference_id=invoice.id,
+                entry_date=datetime.utcnow()
+            )
+            session.add(accounting_entry)
     
-    # 6. AUTOMATIZACIÓN 2: Descontar stock y registrar salida en Inventario si el SKU existe
-    for item in invoice_in.items:
-        if item.sku:
-            product = session.exec(select(Product).where(Product.sku == item.sku)).first()
-            if product:
-                product.current_stock -= item.quantity
-                product.updated_at = datetime.utcnow()
-                session.add(product)
-                
-                movement = InventoryMovement(
-                    product_id=product.id,
-                    movement_type="exit",
-                    quantity=-item.quantity,
-                    unit_cost=product.cost_price,
-                    reference_type="invoice",
-                    reference_id=invoice.id,
-                    notes=f"Venta en Factura #{invoice.invoice_number} a {contact.name}"
-                )
-                session.add(movement)
+    # 6. AUTOMATIZACIÓN 2: Descontar stock SOLO si el módulo 'inventory' está activo
+    if "inventory" in modules:
+        for item in invoice_in.items:
+            if item.sku:
+                product = session.exec(select(Product).where(Product.sku == item.sku)).first()
+                if product:
+                    product.current_stock -= item.quantity
+                    product.updated_at = datetime.utcnow()
+                    session.add(product)
+                    
+                    movement = InventoryMovement(
+                        product_id=product.id,
+                        movement_type="exit",
+                        quantity=-item.quantity,
+                        unit_cost=product.cost_price,
+                        reference_type="invoice",
+                        reference_id=invoice.id,
+                        notes=f"Venta en Factura #{invoice.invoice_number} a {contact.name}"
+                    )
+                    session.add(movement)
     
     session.commit()
     

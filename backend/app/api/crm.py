@@ -3,6 +3,7 @@ from fastapi.responses import PlainTextResponse
 from sqlmodel import Session, select
 from app.core.database import get_session
 from app.core.tenant import get_tenant_by_api_key
+from app.core.module_guard import require_module
 from app.models.tenant import Tenant
 from app.models.contact import Contact
 from app.services.nlp_service import nlp_service
@@ -131,7 +132,7 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, t
 @router.post("/whatsapp/send")
 async def send_whatsapp(
     msg_in: WhatsAppMessage,
-    tenant: Tenant = Depends(get_tenant_by_api_key),
+    tenant: Tenant = Depends(require_module("crm_whatsapp")),
     session: Session = Depends(get_session)
 ):
     """

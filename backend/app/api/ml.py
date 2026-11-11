@@ -3,6 +3,7 @@ from sqlmodel import Session, select
 from typing import List, Optional
 from app.core.database import get_session
 from app.core.tenant import get_tenant_by_api_key
+from app.core.module_guard import require_module
 from app.models.tenant import Tenant
 from app.models.ml_alert import MlAlert
 from app.schemas.ml import (
@@ -65,7 +66,7 @@ def mark_alert_read(
 
 @router.get("/leads/ranking", response_model=LeadRankingResponse)
 def get_lead_ranking(
-    tenant: Tenant = Depends(get_tenant_by_api_key),
+    tenant: Tenant = Depends(require_module("ml_leads")),
     session: Session = Depends(get_session)
 ):
     """
@@ -94,7 +95,7 @@ def get_lead_ranking(
 
 @router.get("/forecast", response_model=DemandForecastResponse)
 def get_demand_forecast(
-    tenant: Tenant = Depends(get_tenant_by_api_key),
+    tenant: Tenant = Depends(require_module("ml_inventory")),
     session: Session = Depends(get_session)
 ):
     """

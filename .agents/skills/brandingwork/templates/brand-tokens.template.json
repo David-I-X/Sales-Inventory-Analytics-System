@@ -1,0 +1,33 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "color": {
+    "background": {
+      "primary": { "value": "#0B0F17", "type": "color" },
+      "surface": { "value": "#161F2E", "type": "color" }
+    },
+    "brand": {
+      "primary": { "value": "#6366F1", "type": "color" },
+      "secondary": { "value": "#06B6D4", "type": "color" }
+    },
+    "text": {
+      "primary": { "value": "#F8FAFC", "type": "color" },
+      "muted": { "value": "#94A3B8", "type": "color" }
+    },
+    "feedback": {
+      "success": { "value": "#10B981", "type": "color" },
+      "error": { "value": "#EF4444", "type": "color" }
+    }
+  },
+  "font": {
+    "family": {
+      "display": { "value": "Archivo, sans-serif", "type": "fontFamily" },
+      "body": { "value": "Geist, sans-serif", "type": "fontFamily" },
+      "mono": { "value": "Geist Mono, monospace", "type": "fontFamily" }
+    }
+  },
+  "radius": {
+    "sm": { "value": "4px", "type": "dimension" },
+    "md": { "value": "8px", "type": "dimension" },
+    "lg": { "value": "16px", "type": "dimension" }
+  }
+}
