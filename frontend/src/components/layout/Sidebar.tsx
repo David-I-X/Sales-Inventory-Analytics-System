@@ -4,6 +4,7 @@ import {
   IconHome, 
   IconUsers, 
   IconFileInvoice, 
+  IconFileText,
   IconPackages, 
   IconShoppingCart, 
   IconReceipt2, 
@@ -85,6 +86,13 @@ export const Sidebar: React.FC = () => {
           </NavLink>
 
           {/* Módulos Condicionales A la Carta */}
+          {hasModule('quotes') && (
+            <NavLink to="/quotes" className={navClass}>
+              <IconFileText size={18} className="sidebar-icon shrink-0" />
+              {!collapsed && <span className="sidebar-text">Cotizaciones</span>}
+            </NavLink>
+          )}
+
           {hasModule('dian_invoicing') && (
             <NavLink to="/invoices" className={navClass}>
               <IconFileInvoice size={18} className="sidebar-icon shrink-0" />

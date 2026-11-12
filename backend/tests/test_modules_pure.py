@@ -9,14 +9,14 @@ from app.core.module_guard import require_module
 from app.models.tenant import Tenant
 
 def test_module_catalog_structure():
-    """Verifica que el catálogo tenga los 7 módulos canónicos bien configurados."""
+    """Verifica que el catálogo tenga los 8 módulos canónicos bien configurados."""
     modules = get_all_modules()
-    assert len(modules) == 7
+    assert len(modules) == 8
     
     slugs = {m.slug for m in modules}
     expected_slugs = {
         "dian_invoicing", "accounting", "inventory", 
-        "purchases", "crm_whatsapp", "ml_leads", "ml_inventory"
+        "purchases", "crm_whatsapp", "quotes", "ml_leads", "ml_inventory"
     }
     assert slugs == expected_slugs
 

@@ -14,6 +14,7 @@ from app.api import purchases
 from app.api import accounting
 from app.api import auth
 from app.api import modules
+from app.api import quotes
 from app.core.database import engine
 
 app = FastAPI(
@@ -42,6 +43,7 @@ app.include_router(accounting.router, prefix=f"{settings.API_V1_STR}/accounting"
 app.include_router(crm.router, prefix=f"{settings.API_V1_STR}/crm", tags=["CRM"])
 app.include_router(ml.router, prefix=f"{settings.API_V1_STR}/ml", tags=["Machine Learning Engine"])
 app.include_router(modules.router, prefix=f"{settings.API_V1_STR}/modules", tags=["Tools & Modules"])
+app.include_router(quotes.router, prefix=f"{settings.API_V1_STR}/quotes", tags=["Quotes"])
 app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["Authentication"])
 
 @app.on_event("startup")
@@ -191,6 +193,27 @@ def startup_event():
                     created_at TIMESTAMP DEFAULT NOW()
                 );
                 
+                CREATE TABLE IF NOT EXISTS "{schema}".quotes (
+                    id SERIAL PRIMARY KEY,
+                    quote_number VARCHAR NOT NULL,
+                    contact_id INTEGER REFERENCES "{schema}".contacts(id),
+                    title VARCHAR DEFAULT 'Cotización de Servicios / Productos',
+                    status VARCHAR DEFAULT 'draft',
+                    subtotal NUMERIC(12,2) DEFAULT 0,
+                    tax_rate NUMERIC(5,2) DEFAULT 0.19,
+                    tax NUMERIC(12,2) DEFAULT 0,
+                    discount NUMERIC(12,2) DEFAULT 0,
+                    total NUMERIC(12,2) DEFAULT 0,
+                    items JSONB DEFAULT '[]',
+                    terms TEXT,
+                    notes TEXT,
+                    issued_at TIMESTAMP DEFAULT NOW(),
+                    valid_until TIMESTAMP DEFAULT (NOW() + INTERVAL '15 days'),
+                    updated_at TIMESTAMP DEFAULT NOW(),
+                    invoice_id INTEGER,
+                    invoice_number VARCHAR
+                );
+                
                 CREATE INDEX IF NOT EXISTS idx_{schema}_products_sku ON "{schema}".products(sku);
                 CREATE INDEX IF NOT EXISTS idx_{schema}_suppliers_nit ON "{schema}".suppliers(nit);
                 CREATE INDEX IF NOT EXISTS idx_{schema}_movements_product ON "{schema}".inventory_movements(product_id);
@@ -198,6 +221,9 @@ def startup_event():
                 CREATE INDEX IF NOT EXISTS idx_{schema}_accounting_type ON "{schema}".accounting_entries(entry_type);
                 CREATE INDEX IF NOT EXISTS idx_{schema}_accounting_category ON "{schema}".accounting_entries(category);
                 CREATE INDEX IF NOT EXISTS idx_{schema}_accounting_date ON "{schema}".accounting_entries(entry_date);
+                CREATE INDEX IF NOT EXISTS idx_{schema}_quotes_number ON "{schema}".quotes(quote_number);
+                CREATE INDEX IF NOT EXISTS idx_{schema}_quotes_status ON "{schema}".quotes(status);
+                CREATE INDEX IF NOT EXISTS idx_{schema}_quotes_contact ON "{schema}".quotes(contact_id);
             '''))
         session.commit()
 

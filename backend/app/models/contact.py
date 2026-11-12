@@ -19,3 +19,4 @@ class Contact(SQLModel, table=True):
     # Relationships definition string to avoid circular imports
     invoices: List["Invoice"] = Relationship(back_populates="contact")
     transactions: List["Transaction"] = Relationship(back_populates="contact")
+    quotes: List["Quote"] = Relationship(back_populates="contact")

@@ -257,3 +257,69 @@ export interface MonthlyPnL {
   net_operating_income: number;
   net_margin_percentage: number;
 }
+
+export interface QuoteItem {
+  description: string;
+  quantity: number;
+  unit_price: number;
+  discount?: number;
+  subtotal?: number;
+  sku?: string;
+  item_type?: 'service' | 'product';
+}
+
+export interface Quote {
+  id: number;
+  quote_number: string;
+  contact_id?: number | null;
+  contact_name?: string | null;
+  title: string;
+  status: 'draft' | 'sent' | 'approved' | 'rejected' | 'invoiced';
+  subtotal: number;
+  tax_rate: number;
+  tax: number;
+  discount: number;
+  total: number;
+  items: QuoteItem[];
+  terms?: string | null;
+  notes?: string | null;
+  issued_at: string;
+  valid_until: string;
+  updated_at: string;
+  invoice_id?: number | null;
+  invoice_number?: string | null;
+}
+
+export interface QuoteCreatePayload {
+  contact_id?: number | null;
+  title: string;
+  items: QuoteItem[];
+  tax_rate?: number;
+  discount?: number;
+  terms?: string;
+  notes?: string;
+  valid_until?: string;
+}
+
+export interface QuoteUpdatePayload {
+  contact_id?: number | null;
+  title?: string;
+  items?: QuoteItem[];
+  tax_rate?: number;
+  discount?: number;
+  terms?: string;
+  notes?: string;
+  status?: string;
+  valid_until?: string;
+}
+
+export interface ConvertToInvoiceResponse {
+  quote_id: number;
+  quote_number: string;
+  status: string;
+  invoice_id: number;
+  invoice_number: string;
+  total: number;
+  cufe?: string | null;
+  message: string;
+}

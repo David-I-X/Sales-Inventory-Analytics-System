@@ -114,6 +114,12 @@ export const api = {
       method: 'POST', 
       body: data ? JSON.stringify(data) : undefined 
     }),
+
+  put: <T>(endpoint: string, data?: unknown) => 
+    apiFetch<T>(endpoint, { 
+      method: 'PUT', 
+      body: data ? JSON.stringify(data) : undefined 
+    }),
     
   patch: <T>(endpoint: string, data?: unknown) => 
     apiFetch<T>(endpoint, { 

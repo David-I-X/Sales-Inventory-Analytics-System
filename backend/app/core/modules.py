@@ -62,6 +62,15 @@ MODULE_CATALOG: Dict[str, ModuleDefinition] = {
         dependencies=[],
         default_enabled=False
     ),
+    "quotes": ModuleDefinition(
+        slug="quotes",
+        name="Cotizaciones y Presupuestos",
+        description="Emisión de propuestas comerciales y presupuestos de servicios, actualización continua de ítems y conversión directa a Factura DIAN.",
+        category="Ventas & Clientes",
+        icon="IconFileText",
+        dependencies=[],
+        default_enabled=True
+    ),
     "ml_leads": ModuleDefinition(
         slug="ml_leads",
         name="IA: Scoring de Oportunidades",

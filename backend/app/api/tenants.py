@@ -133,6 +133,28 @@ def register_tenant(tenant_in: TenantCreate, session: Session = Depends(get_sess
         )
     '''))
     session.execute(text(f'''
+        CREATE TABLE IF NOT EXISTS "{schema}".quotes (
+            id SERIAL PRIMARY KEY,
+            quote_number VARCHAR NOT NULL,
+            contact_id INTEGER REFERENCES "{schema}".contacts(id),
+            title VARCHAR DEFAULT 'Cotización de Servicios / Productos',
+            status VARCHAR DEFAULT 'draft',
+            subtotal NUMERIC(12,2) DEFAULT 0,
+            tax_rate NUMERIC(5,2) DEFAULT 0.19,
+            tax NUMERIC(12,2) DEFAULT 0,
+            discount NUMERIC(12,2) DEFAULT 0,
+            total NUMERIC(12,2) DEFAULT 0,
+            items JSONB DEFAULT '[]',
+            terms TEXT,
+            notes TEXT,
+            issued_at TIMESTAMP DEFAULT NOW(),
+            valid_until TIMESTAMP DEFAULT (NOW() + INTERVAL '15 days'),
+            updated_at TIMESTAMP DEFAULT NOW(),
+            invoice_id INTEGER,
+            invoice_number VARCHAR
+        )
+    '''))
+    session.execute(text(f'''
         CREATE TABLE IF NOT EXISTS "{schema}".invoices (
             id SERIAL PRIMARY KEY,
             contact_id INTEGER REFERENCES "{schema}".contacts(id),
@@ -192,6 +214,9 @@ def register_tenant(tenant_in: TenantCreate, session: Session = Depends(get_sess
     session.execute(text(f'CREATE INDEX IF NOT EXISTS idx_{schema}_accounting_type ON "{schema}".accounting_entries(entry_type)'))
     session.execute(text(f'CREATE INDEX IF NOT EXISTS idx_{schema}_accounting_category ON "{schema}".accounting_entries(category)'))
     session.execute(text(f'CREATE INDEX IF NOT EXISTS idx_{schema}_accounting_date ON "{schema}".accounting_entries(entry_date)'))
+    session.execute(text(f'CREATE INDEX IF NOT EXISTS idx_{schema}_quotes_number ON "{schema}".quotes(quote_number)'))
+    session.execute(text(f'CREATE INDEX IF NOT EXISTS idx_{schema}_quotes_status ON "{schema}".quotes(status)'))
+    session.execute(text(f'CREATE INDEX IF NOT EXISTS idx_{schema}_quotes_contact ON "{schema}".quotes(contact_id)'))
     session.execute(text(f'CREATE INDEX IF NOT EXISTS idx_{schema}_ml_alerts_type ON "{schema}".ml_alerts(alert_type)'))
     session.execute(text(f'CREATE INDEX IF NOT EXISTS idx_{schema}_ml_alerts_is_read ON "{schema}".ml_alerts(is_read)'))
     

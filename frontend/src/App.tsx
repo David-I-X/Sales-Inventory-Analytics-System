@@ -11,6 +11,7 @@ import MlEngine from './pages/MlEngine';
 import Users from './pages/Users';
 import Profile from './pages/Profile';
 import Modules from './pages/Modules';
+import Quotes from './pages/Quotes';
 
 function App() {
   return (
@@ -26,6 +27,12 @@ function App() {
       <Route path="/contacts" element={
         <AppLayout title="Contactos">
           <Contacts />
+        </AppLayout>
+      } />
+
+      <Route path="/quotes" element={
+        <AppLayout title="Cotizaciones & Presupuestos">
+          <Quotes />
         </AppLayout>
       } />
 

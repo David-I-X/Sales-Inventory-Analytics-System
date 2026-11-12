@@ -7,6 +7,7 @@ from .supplier import Supplier
 from .inventory_movement import InventoryMovement
 from .purchase import Purchase
 from .accounting_entry import AccountingEntry
+from .quote import Quote
 
 __all__ = [
     "Tenant",
@@ -19,4 +20,5 @@ __all__ = [
     "InventoryMovement",
     "Purchase",
     "AccountingEntry",
+    "Quote",
 ]
