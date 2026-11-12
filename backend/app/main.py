@@ -107,6 +107,32 @@ def startup_event():
         session.execute(text('CREATE INDEX IF NOT EXISTS idx_refresh_tokens_family ON public.refresh_tokens(family_id)'))
         session.execute(text('CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON public.refresh_tokens(user_id)'))
         session.execute(text('CREATE INDEX IF NOT EXISTS idx_token_blacklist_jti ON public.token_blacklist(jti)'))
+        
+        session.execute(text('''
+            CREATE TABLE IF NOT EXISTS public.quotes (
+                id SERIAL PRIMARY KEY,
+                quote_number VARCHAR NOT NULL,
+                contact_id INTEGER,
+                title VARCHAR DEFAULT 'Cotización de Servicios / Productos',
+                status VARCHAR DEFAULT 'draft',
+                subtotal NUMERIC(12,2) DEFAULT 0,
+                tax_rate NUMERIC(5,2) DEFAULT 0.19,
+                tax NUMERIC(12,2) DEFAULT 0,
+                discount NUMERIC(12,2) DEFAULT 0,
+                total NUMERIC(12,2) DEFAULT 0,
+                items JSONB DEFAULT '[]',
+                terms TEXT,
+                notes TEXT,
+                issued_at TIMESTAMP DEFAULT NOW(),
+                valid_until TIMESTAMP DEFAULT (NOW() + INTERVAL '15 days'),
+                updated_at TIMESTAMP DEFAULT NOW(),
+                invoice_id INTEGER,
+                invoice_number VARCHAR
+            );
+            CREATE INDEX IF NOT EXISTS idx_public_quotes_number ON public.quotes(quote_number);
+            CREATE INDEX IF NOT EXISTS idx_public_quotes_status ON public.quotes(status);
+            CREATE INDEX IF NOT EXISTS idx_public_quotes_contact ON public.quotes(contact_id);
+        '''))
         session.commit()
         
         # Cargar blacklist en caché
@@ -196,7 +222,7 @@ def startup_event():
                 CREATE TABLE IF NOT EXISTS "{schema}".quotes (
                     id SERIAL PRIMARY KEY,
                     quote_number VARCHAR NOT NULL,
-                    contact_id INTEGER REFERENCES "{schema}".contacts(id),
+                    contact_id INTEGER,
                     title VARCHAR DEFAULT 'Cotización de Servicios / Productos',
                     status VARCHAR DEFAULT 'draft',
                     subtotal NUMERIC(12,2) DEFAULT 0,

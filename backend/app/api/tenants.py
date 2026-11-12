@@ -136,7 +136,7 @@ def register_tenant(tenant_in: TenantCreate, session: Session = Depends(get_sess
         CREATE TABLE IF NOT EXISTS "{schema}".quotes (
             id SERIAL PRIMARY KEY,
             quote_number VARCHAR NOT NULL,
-            contact_id INTEGER REFERENCES "{schema}".contacts(id),
+            contact_id INTEGER,
             title VARCHAR DEFAULT 'Cotización de Servicios / Productos',
             status VARCHAR DEFAULT 'draft',
             subtotal NUMERIC(12,2) DEFAULT 0,
