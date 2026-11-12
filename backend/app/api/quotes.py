@@ -3,7 +3,7 @@ api/quotes.py — Endpoints para Cotizaciones y Presupuestos de Servicios / Prod
 Protegido por el guard modular require_module("quotes").
 """
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlmodel import Session, select
@@ -92,8 +92,10 @@ def create_quote(
         quote_in.items, quote_in.tax_rate, quote_in.discount
     )
 
-    now = datetime.utcnow()
-    valid_until = quote_in.valid_until or (now + datetime.resolution * 0) # handled by model default
+    now = datetime.now(timezone.utc)
+    valid_until = quote_in.valid_until
+    if valid_until is not None and valid_until.tzinfo is None:
+        valid_until = valid_until.replace(tzinfo=timezone.utc)
     
     quote = Quote(
         quote_number=quote_number,
@@ -111,8 +113,8 @@ def create_quote(
         issued_at=now,
         updated_at=now
     )
-    if quote_in.valid_until:
-        quote.valid_until = quote_in.valid_until
+    if valid_until is not None:
+        quote.valid_until = valid_until
 
     session.add(quote)
     session.commit()
@@ -224,7 +226,10 @@ def update_quote(
     if quote_in.notes is not None:
         quote.notes = quote_in.notes
     if quote_in.valid_until is not None:
-        quote.valid_until = quote_in.valid_until
+        val_until = quote_in.valid_until
+        if val_until.tzinfo is None:
+            val_until = val_until.replace(tzinfo=timezone.utc)
+        quote.valid_until = val_until
     if quote_in.status is not None:
         if quote_in.status not in ["draft", "sent", "approved", "rejected"]:
             raise HTTPException(status_code=400, detail=f"Estado '{quote_in.status}' no válido.")
@@ -253,7 +258,7 @@ def update_quote(
         quote.tax = tax
         quote.total = total
 
-    quote.updated_at = datetime.utcnow()
+    quote.updated_at = datetime.now(timezone.utc)
 
     session.add(quote)
     session.commit()
@@ -294,7 +299,7 @@ def update_quote_status(
         raise HTTPException(status_code=400, detail=f"Estado '{status_in.status}' no válido.")
 
     quote.status = status_in.status
-    quote.updated_at = datetime.utcnow()
+    quote.updated_at = datetime.now(timezone.utc)
 
     session.add(quote)
     session.commit()
@@ -440,7 +445,7 @@ async def convert_quote_to_invoice(
     quote.status = "invoiced"
     quote.invoice_id = invoice.id
     quote.invoice_number = official_number
-    quote.updated_at = datetime.utcnow()
+    quote.updated_at = datetime.now(timezone.utc)
     session.add(quote)
 
     session.commit()

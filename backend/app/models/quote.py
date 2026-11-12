@@ -4,11 +4,14 @@ Vive en el schema aislado de cada tenant.
 """
 from typing import Optional, List, Dict, Any
 from sqlmodel import SQLModel, Field, Relationship, Column, JSON
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
+def get_utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
 def default_valid_until() -> datetime:
-    return datetime.utcnow() + timedelta(days=15)
+    return datetime.now(timezone.utc) + timedelta(days=15)
 
 class Quote(SQLModel, table=True):
     __tablename__ = "quotes"
@@ -33,9 +36,9 @@ class Quote(SQLModel, table=True):
     terms: Optional[str] = Field(default="Validez de la oferta: 15 días. Pago: 50% anticipo, 50% entrega.")
     notes: Optional[str] = Field(default=None)
     
-    issued_at: datetime = Field(default_factory=datetime.utcnow)
+    issued_at: datetime = Field(default_factory=get_utc_now)
     valid_until: datetime = Field(default_factory=default_valid_until)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=get_utc_now)
     
     # Trazabilidad con Facturación Electrónica DIAN
     invoice_id: Optional[int] = Field(default=None, index=True)
