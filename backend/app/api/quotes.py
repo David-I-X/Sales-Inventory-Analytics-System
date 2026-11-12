@@ -118,7 +118,6 @@ def create_quote(
 
     session.add(quote)
     session.commit()
-    session.refresh(quote)
 
     resp = QuoteResponse.model_validate(quote.model_dump())
     resp.contact_name = contact_name
@@ -262,7 +261,6 @@ def update_quote(
 
     session.add(quote)
     session.commit()
-    session.refresh(quote)
 
     contact_name = None
     if quote.contact_id:
@@ -303,7 +301,6 @@ def update_quote_status(
 
     session.add(quote)
     session.commit()
-    session.refresh(quote)
 
     contact_name = None
     if quote.contact_id:
