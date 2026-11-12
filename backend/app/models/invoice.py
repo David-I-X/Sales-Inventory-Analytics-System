@@ -1,7 +1,10 @@
 from typing import Optional, List, Dict, Any
 from sqlmodel import SQLModel, Field, Relationship, Column, JSON
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
+
+def get_utc_now() -> datetime:
+    return datetime.now(timezone.utc)
 
 class Invoice(SQLModel, table=True):
     __tablename__ = "invoices"
@@ -18,7 +21,7 @@ class Invoice(SQLModel, table=True):
     line_items: List[Dict[str, Any]] = Field(default_factory=list, sa_column=Column(JSON))
     dian_response: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column(JSON))
     
-    issued_at: datetime = Field(default_factory=datetime.utcnow)
+    issued_at: datetime = Field(default_factory=get_utc_now)
     dian_responded_at: Optional[datetime] = None
     
     # Relationships

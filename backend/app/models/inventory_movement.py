@@ -1,7 +1,10 @@
 from typing import Optional
 from sqlmodel import SQLModel, Field
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
+
+def get_utc_now() -> datetime:
+    return datetime.now(timezone.utc)
 
 class InventoryMovement(SQLModel, table=True):
     __tablename__ = "inventory_movements"
@@ -18,4 +21,4 @@ class InventoryMovement(SQLModel, table=True):
     
     notes: Optional[str] = None
     created_by: Optional[str] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+    created_at: datetime = Field(default_factory=get_utc_now, index=True)

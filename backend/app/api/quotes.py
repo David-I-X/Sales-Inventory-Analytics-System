@@ -399,7 +399,8 @@ async def convert_quote_to_invoice(
         line_items=quote.items,
         dian_status=dian_response.get("status", "accepted"),
         dian_response=dian_response,
-        dian_responded_at=datetime.utcnow()
+        issued_at=datetime.now(timezone.utc),
+        dian_responded_at=datetime.now(timezone.utc)
     )
     session.add(invoice)
     session.flush()
@@ -413,7 +414,8 @@ async def convert_quote_to_invoice(
             description=f"Factura {invoice.invoice_number} (Origen: {quote.quote_number}) - {contact.name}",
             reference_type="invoice",
             reference_id=invoice.id,
-            entry_date=datetime.utcnow()
+            entry_date=datetime.now(timezone.utc),
+            created_at=datetime.now(timezone.utc)
         )
         session.add(entry)
 

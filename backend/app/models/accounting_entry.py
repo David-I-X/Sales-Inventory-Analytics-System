@@ -1,7 +1,10 @@
 from typing import Optional
 from sqlmodel import SQLModel, Field
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
+
+def get_utc_now() -> datetime:
+    return datetime.now(timezone.utc)
 
 class AccountingEntry(SQLModel, table=True):
     __tablename__ = "accounting_entries"
@@ -17,6 +20,6 @@ class AccountingEntry(SQLModel, table=True):
     reference_type: Optional[str] = None    # invoice, purchase, manual
     reference_id: Optional[int] = None
     
-    entry_date: datetime = Field(default_factory=datetime.utcnow, index=True)
+    entry_date: datetime = Field(default_factory=get_utc_now, index=True)
     created_by: Optional[str] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=get_utc_now)
