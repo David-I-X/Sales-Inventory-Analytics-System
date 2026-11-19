@@ -3,12 +3,13 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 from decimal import Decimal
 
-# --- Products ---
+# --- Products & Services Catalog ---
 class ProductBase(BaseModel):
-    sku: str
+    sku: Optional[str] = None
     name: str
     description: Optional[str] = None
     category: Optional[str] = None
+    item_type: str = "product"  # "product" | "service"
     unit_measure: str = "unidad"
     sale_price: Decimal = Decimal("0.00")
     cost_price: Decimal = Decimal("0.00")
@@ -18,9 +19,11 @@ class ProductCreate(ProductBase):
     current_stock: int = 0
 
 class ProductUpdate(BaseModel):
+    sku: Optional[str] = None
     name: Optional[str] = None
     description: Optional[str] = None
     category: Optional[str] = None
+    item_type: Optional[str] = None
     unit_measure: Optional[str] = None
     sale_price: Optional[Decimal] = None
     cost_price: Optional[Decimal] = None
@@ -29,6 +32,7 @@ class ProductUpdate(BaseModel):
 
 class ProductResponse(ProductBase):
     id: int
+    sku: str
     current_stock: int
     is_active: bool
     stock_value: Decimal = Decimal("0.00")

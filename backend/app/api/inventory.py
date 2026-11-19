@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 from typing import List, Optional
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.core.database import get_session
 from app.core.tenant import get_tenant_by_api_key
@@ -22,15 +22,24 @@ from app.schemas.inventory import (
 
 router = APIRouter(dependencies=[Depends(require_module("inventory"))])
 
+def _is_service(p: Product) -> bool:
+    return (getattr(p, "item_type", None) or "product") == "service"
+
 def _to_product_response(p: Product) -> ProductResponse:
-    stock_val = Decimal(str(p.current_stock)) * p.cost_price
-    is_low = p.current_stock <= p.min_stock
+    p_type = getattr(p, "item_type", None) or "product"
+    if p_type == "service":
+        stock_val = Decimal("0.00")
+        is_low = False
+    else:
+        stock_val = Decimal(str(p.current_stock)) * p.cost_price
+        is_low = p.current_stock <= p.min_stock
     return ProductResponse(
         id=p.id,
         sku=p.sku,
         name=p.name,
         description=p.description,
         category=p.category,
+        item_type=p_type,
         unit_measure=p.unit_measure,
         sale_price=p.sale_price,
         cost_price=p.cost_price,
@@ -43,18 +52,22 @@ def _to_product_response(p: Product) -> ProductResponse:
         updated_at=p.updated_at,
     )
 
-# --- Products CRUD ---
+def _generate_unique_sku(session: Session, item_type: str) -> str:
+    prefix = "SRV" if item_type == "service" else "PRD"
+    existing_skus = {p.sku for p in session.exec(select(Product)).all()}
+    counter = len(existing_skus) + 1
+    while f"{prefix}-{counter:04d}" in existing_skus:
+        counter += 1
+    return f"{prefix}-{counter:04d}"
 
-@router.get("/products", response_model=List[ProductResponse])
-@router.get("/products/", response_model=List[ProductResponse], include_in_schema=False)
-def list_products(
+def list_catalog_items_logic(
+    session: Session,
+    item_type: Optional[str] = None,
     category: Optional[str] = None,
     low_stock_only: bool = False,
     is_active: Optional[bool] = True,
     search: Optional[str] = None,
-    tenant: Tenant = Depends(get_tenant_by_api_key),
-    session: Session = Depends(get_session)
-):
+) -> List[ProductResponse]:
     statement = select(Product)
     if is_active is not None:
         statement = statement.where(Product.is_active == is_active)
@@ -63,14 +76,124 @@ def list_products(
     
     products = session.exec(statement.order_by(Product.name)).all()
     
+    if item_type:
+        products = [p for p in products if (getattr(p, "item_type", None) or "product") == item_type]
     if search:
         s = search.lower()
         products = [p for p in products if s in p.name.lower() or s in p.sku.lower()]
-        
     if low_stock_only:
-        products = [p for p in products if p.current_stock <= p.min_stock]
+        products = [p for p in products if not _is_service(p) and p.current_stock <= p.min_stock]
         
     return [_to_product_response(p) for p in products]
+
+def create_catalog_item_logic(product_in: ProductCreate, session: Session) -> ProductResponse:
+    item_type = (product_in.item_type or "product").lower()
+    if item_type not in ("product", "service"):
+        raise HTTPException(status_code=400, detail="item_type debe ser 'product' o 'service'")
+
+    sku = product_in.sku.strip() if product_in.sku and product_in.sku.strip() else _generate_unique_sku(session, item_type)
+
+    existing = session.exec(select(Product).where(Product.sku == sku)).first()
+    if existing:
+        raise HTTPException(status_code=400, detail=f"Ya existe un producto con el SKU '{sku}'")
+    
+    current_stock = 0 if item_type == "service" else product_in.current_stock
+    min_stock = 0 if item_type == "service" else product_in.min_stock
+    now = datetime.now(timezone.utc)
+
+    product = Product(
+        sku=sku,
+        name=product_in.name,
+        description=product_in.description,
+        category=product_in.category,
+        item_type=item_type,
+        unit_measure=product_in.unit_measure,
+        sale_price=product_in.sale_price,
+        cost_price=product_in.cost_price,
+        current_stock=current_stock,
+        min_stock=min_stock,
+        is_active=True,
+        created_at=now,
+        updated_at=now,
+    )
+    session.add(product)
+    session.flush()
+    
+    if item_type == "product" and current_stock > 0:
+        movement = InventoryMovement(
+            product_id=product.id,
+            movement_type="entry",
+            quantity=current_stock,
+            unit_cost=product_in.cost_price,
+            reference_type="manual_initial",
+            notes="Inventario inicial al crear producto",
+            created_at=now,
+        )
+        session.add(movement)
+        
+    session.flush()
+    session.commit()
+    return _to_product_response(product)
+
+def update_catalog_item_logic(product_id: int, product_update: ProductUpdate, session: Session) -> ProductResponse:
+    product = session.get(Product, product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto o servicio no encontrado")
+    
+    update_data = product_update.model_dump(exclude_unset=True)
+    if "item_type" in update_data and update_data["item_type"] not in ("product", "service"):
+        raise HTTPException(status_code=400, detail="item_type debe ser 'product' o 'service'")
+    if "sku" in update_data and update_data["sku"] and update_data["sku"] != product.sku:
+        dup = session.exec(select(Product).where(Product.sku == update_data["sku"])).first()
+        if dup:
+            raise HTTPException(status_code=400, detail=f"Ya existe un ítem con el SKU '{update_data['sku']}'")
+
+    for key, value in update_data.items():
+        setattr(product, key, value)
+        
+    if _is_service(product):
+        product.current_stock = 0
+        product.min_stock = 0
+
+    product.updated_at = datetime.now(timezone.utc)
+    session.add(product)
+    session.flush()
+    session.commit()
+    return _to_product_response(product)
+
+def delete_catalog_item_logic(product_id: int, session: Session) -> dict:
+    product = session.get(Product, product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto o servicio no encontrado")
+    
+    product.is_active = False
+    product.updated_at = datetime.now(timezone.utc)
+    session.add(product)
+    session.flush()
+    session.commit()
+    return {"message": "Ítem desactivado exitosamente", "id": product_id}
+
+# --- Products CRUD ---
+
+@router.get("/products", response_model=List[ProductResponse])
+@router.get("/products/", response_model=List[ProductResponse], include_in_schema=False)
+def list_products(
+    item_type: Optional[str] = None,
+    category: Optional[str] = None,
+    low_stock_only: bool = False,
+    is_active: Optional[bool] = True,
+    search: Optional[str] = None,
+    tenant: Tenant = Depends(get_tenant_by_api_key),
+    session: Session = Depends(get_session)
+):
+    return list_catalog_items_logic(
+        session=session,
+        item_type=item_type,
+        category=category,
+        low_stock_only=low_stock_only,
+        is_active=is_active,
+        search=search,
+    )
 
 @router.post("/products", response_model=ProductResponse)
 @router.post("/products/", response_model=ProductResponse, include_in_schema=False)
@@ -79,41 +202,7 @@ def create_product(
     tenant: Tenant = Depends(get_tenant_by_api_key),
     session: Session = Depends(get_session)
 ):
-    # Check duplicate SKU
-    existing = session.exec(select(Product).where(Product.sku == product_in.sku)).first()
-    if existing:
-        raise HTTPException(status_code=400, detail=f"Ya existe un producto con el SKU '{product_in.sku}'")
-    
-    product = Product(
-        sku=product_in.sku,
-        name=product_in.name,
-        description=product_in.description,
-        category=product_in.category,
-        unit_measure=product_in.unit_measure,
-        sale_price=product_in.sale_price,
-        cost_price=product_in.cost_price,
-        current_stock=product_in.current_stock,
-        min_stock=product_in.min_stock,
-        is_active=True,
-    )
-    session.add(product)
-    session.flush()
-    
-    # If initial stock > 0, create an initial inventory movement
-    if product_in.current_stock > 0:
-        movement = InventoryMovement(
-            product_id=product.id,
-            movement_type="entry",
-            quantity=product_in.current_stock,
-            unit_cost=product_in.cost_price,
-            reference_type="manual_initial",
-            notes="Inventario inicial al crear producto"
-        )
-        session.add(movement)
-        
-    session.flush()
-    session.commit()
-    return _to_product_response(product)
+    return create_catalog_item_logic(product_in=product_in, session=session)
 
 @router.get("/products/{product_id}", response_model=ProductResponse)
 def get_product(
@@ -133,19 +222,7 @@ def update_product(
     tenant: Tenant = Depends(get_tenant_by_api_key),
     session: Session = Depends(get_session)
 ):
-    product = session.get(Product, product_id)
-    if not product:
-        raise HTTPException(status_code=404, detail="Producto no encontrado")
-    
-    update_data = product_update.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(product, key, value)
-        
-    product.updated_at = datetime.utcnow()
-    session.add(product)
-    session.flush()
-    session.commit()
-    return _to_product_response(product)
+    return update_catalog_item_logic(product_id=product_id, product_update=product_update, session=session)
 
 @router.delete("/products/{product_id}")
 def delete_product(
@@ -153,17 +230,7 @@ def delete_product(
     tenant: Tenant = Depends(get_tenant_by_api_key),
     session: Session = Depends(get_session)
 ):
-    product = session.get(Product, product_id)
-    if not product:
-        raise HTTPException(status_code=404, detail="Producto no encontrado")
-    
-    # Soft delete
-    product.is_active = False
-    product.updated_at = datetime.utcnow()
-    session.add(product)
-    session.flush()
-    session.commit()
-    return {"message": "Producto desactivado exitosamente", "id": product_id}
+    return delete_catalog_item_logic(product_id=product_id, session=session)
 
 # --- Inventory Movements & Adjustments ---
 
@@ -216,6 +283,8 @@ def adjust_stock(
     product = session.get(Product, adjustment.product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
+    if _is_service(product):
+        raise HTTPException(status_code=400, detail="Los servicios no manejan stock físico en bodega")
     
     old_stock = product.current_stock
     diff = adjustment.new_stock - old_stock
@@ -223,8 +292,9 @@ def adjust_stock(
     if diff == 0:
         return _to_product_response(product)
     
+    now = datetime.now(timezone.utc)
     product.current_stock = adjustment.new_stock
-    product.updated_at = datetime.utcnow()
+    product.updated_at = now
     session.add(product)
     
     movement = InventoryMovement(
@@ -233,7 +303,8 @@ def adjust_stock(
         quantity=diff,
         unit_cost=product.cost_price,
         reference_type="manual_adjustment",
-        notes=f"{adjustment.reason} (Stock anterior: {old_stock} → Nuevo: {adjustment.new_stock})"
+        notes=f"{adjustment.reason} (Stock anterior: {old_stock} → Nuevo: {adjustment.new_stock})",
+        created_at=now,
     )
     session.add(movement)
     session.flush()
@@ -249,12 +320,13 @@ def get_inventory_dashboard(
     session: Session = Depends(get_session)
 ):
     products = session.exec(select(Product).where(Product.is_active == True)).all()
+    physical_products = [p for p in products if not _is_service(p)]
     
     total_val = Decimal("0.00")
     total_units = 0
     low_stock_items: List[LowStockAlert] = []
     
-    for p in products:
+    for p in physical_products:
         val = Decimal(str(p.current_stock)) * p.cost_price
         total_val += val
         total_units += p.current_stock
@@ -269,15 +341,15 @@ def get_inventory_dashboard(
                 deficit=max(0, p.min_stock - p.current_stock)
             ))
             
-    # Sort top products by stock
-    top_products = sorted(products, key=lambda x: x.current_stock, reverse=True)[:5]
+    # Sort top physical products by stock
+    top_products = sorted(physical_products, key=lambda x: x.current_stock, reverse=True)[:5]
     top_stock_list = [
         {"sku": p.sku, "name": p.name, "stock": p.current_stock, "unit_measure": p.unit_measure}
         for p in top_products
     ]
     
     return InventoryDashboardResponse(
-        total_products=len(products),
+        total_products=len(physical_products),
         total_inventory_value=total_val,
         total_units_in_stock=total_units,
         low_stock_count=len(low_stock_items),
@@ -294,7 +366,7 @@ def get_low_stock_alerts(
     products = session.exec(select(Product).where(Product.is_active == True)).all()
     alerts = []
     for p in products:
-        if p.current_stock <= p.min_stock:
+        if not _is_service(p) and p.current_stock <= p.min_stock:
             alerts.append(LowStockAlert(
                 product_id=p.id,
                 sku=p.sku,

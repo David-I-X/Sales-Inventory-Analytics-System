@@ -91,8 +91,72 @@ MODULE_CATALOG: Dict[str, ModuleDefinition] = {
     )
 }
 
+DEFAULT_MODULE_SETTINGS: Dict[str, Dict[str, Any]] = {
+    "dian_invoicing": {
+        "prefix": "SETT",
+        "resolution_number": "18760000001",
+        "numbering_range_from": 1,
+        "numbering_range_to": 5000,
+        "environment": "sandbox",
+        "factus_pay_enabled": True,
+        "factus_pay_merchant_id": "",
+        "default_payment_method": "factus_pay",
+    },
+    "quotes": {
+        "default_validity_days": 15,
+        "default_tax_rate": 0.19,
+        "default_terms": "Validez de la oferta: 15 días. Pago: 50% anticipo, 50% entrega.",
+        "company_nit": "",
+        "company_phone": "",
+        "bank_account_info": "Pagos vía Factus Pay / Transferencia Bancaria",
+    },
+    "accounting": {
+        "auto_accounting_invoices": True,
+        "fiscal_regime": "responsable_iva",
+        "retefuente_services_pct": 4.0,
+        "retefuente_products_pct": 2.5,
+        "reteica_pct": 0.966,
+    },
+    "inventory": {
+        "default_min_stock": 5,
+        "default_unit_measure": "unidad",
+        "allow_negative_stock": False,
+        "enable_services_catalog": True,
+    },
+    "purchases": {
+        "default_tax_rate": 0.19,
+        "auto_update_cost_price": True,
+        "auto_accounting_purchases": True,
+    },
+    "crm_whatsapp": {
+        "whatsapp_phone_number_id": "",
+        "whatsapp_business_account_id": "",
+        "auto_reply_enabled": True,
+        "welcome_message": "Hola, gracias por comunicarte con nosotros. ¿En qué podemos ayudarte?",
+    },
+    "ml_leads": {
+        "hot_lead_threshold": 75,
+        "auto_score_on_message": True,
+    },
+    "ml_inventory": {
+        "forecast_horizon_days": 14,
+        "safety_stock_multiplier": 1.2,
+    },
+}
+
 def get_all_modules() -> List[ModuleDefinition]:
     return list(MODULE_CATALOG.values())
 
 def get_default_modules() -> List[str]:
     return [slug for slug, mod in MODULE_CATALOG.items() if mod.default_enabled]
+
+def get_merged_module_settings(
+    slug: str,
+    tenant_settings: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
+    """Combina los valores por defecto del módulo con los ajustes guardados del tenant."""
+    defaults = dict(DEFAULT_MODULE_SETTINGS.get(slug, {}))
+    stored = (tenant_settings or {}).get(slug, {})
+    if isinstance(stored, dict):
+        defaults.update(stored)
+    return defaults

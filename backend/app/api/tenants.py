@@ -66,6 +66,7 @@ def register_tenant(tenant_in: TenantCreate, session: Session = Depends(get_sess
             name VARCHAR NOT NULL,
             description TEXT,
             category VARCHAR,
+            item_type VARCHAR DEFAULT 'product',
             unit_measure VARCHAR DEFAULT 'unidad',
             sale_price NUMERIC(12,2) DEFAULT 0,
             cost_price NUMERIC(12,2) DEFAULT 0,

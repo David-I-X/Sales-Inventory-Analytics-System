@@ -9,6 +9,8 @@ export interface User {
   created_at: string;
 }
 
+export type ModuleSettingValue = string | number | boolean;
+
 export interface ModuleStatus {
   slug: string;
   name: string;
@@ -18,6 +20,7 @@ export interface ModuleStatus {
   dependencies: string[];
   is_enabled: boolean;
   unmet_dependencies: string[];
+  settings?: Record<string, ModuleSettingValue>;
 }
 
 export interface ModuleCatalogResponse {
@@ -31,6 +34,13 @@ export interface ModuleToggleResponse {
   name: string;
   is_enabled: boolean;
   enabled_modules: string[];
+  message: string;
+}
+
+export interface ModuleSettingsResponse {
+  slug: string;
+  name: string;
+  settings: Record<string, ModuleSettingValue>;
   message: string;
 }
 
@@ -121,6 +131,7 @@ export interface Product {
   name: string;
   description: string | null;
   category: string | null;
+  item_type?: 'product' | 'service';
   unit_measure: string;
   sale_price: number;
   cost_price: number;

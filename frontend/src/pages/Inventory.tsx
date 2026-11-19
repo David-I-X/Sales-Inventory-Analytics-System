@@ -24,6 +24,7 @@ export const Inventory: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [search, setSearch] = useState<string>('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'product' | 'service'>('all');
   
   // Modal states
   const [showProductModal, setShowProductModal] = useState<boolean>(false);
@@ -36,6 +37,7 @@ export const Inventory: React.FC = () => {
     name: '',
     description: '',
     category: '',
+    item_type: 'product' as 'product' | 'service',
     unit_measure: 'unidad',
     sale_price: 0,
     cost_price: 0,
@@ -90,6 +92,7 @@ export const Inventory: React.FC = () => {
         name: '',
         description: '',
         category: '',
+        item_type: 'product',
         unit_measure: 'unidad',
         sale_price: 0,
         cost_price: 0,
@@ -135,7 +138,9 @@ export const Inventory: React.FC = () => {
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || 
                           p.sku.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = categoryFilter ? p.category === categoryFilter : true;
-    return matchesSearch && matchesCategory;
+    const pType = p.item_type || 'product';
+    const matchesType = typeFilter === 'all' ? true : pType === typeFilter;
+    return matchesSearch && matchesCategory && matchesType;
   });
 
   const categories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
@@ -219,11 +224,20 @@ export const Inventory: React.FC = () => {
               <input
                 type="text"
                 className="input input-with-icon"
-                placeholder="Buscar por SKU o nombre de producto..."
+                placeholder="Buscar por SKU o nombre de producto o servicio..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
+            <select
+              className="input sm:w-44"
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value as 'all' | 'product' | 'service')}
+            >
+              <option value="all">Todos los tipos</option>
+              <option value="product">Productos Físicos</option>
+              <option value="service">Servicios</option>
+            </select>
             {categories.length > 0 && (
               <select
                 className="input sm:w-56"
@@ -265,11 +279,22 @@ export const Inventory: React.FC = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredProducts.map((p) => (
+                  filteredProducts.map((p) => {
+                    const isService = (p.item_type || 'product') === 'service';
+                    return (
                     <tr key={p.id}>
                       <td className="font-mono text-xs font-semibold">{p.sku}</td>
                       <td>
-                        <div className="font-semibold text-primary">{p.name}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-primary">{p.name}</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                            isService
+                              ? 'bg-purple-500/10 text-purple-500 border border-purple-500/20'
+                              : 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
+                          }`}>
+                            {isService ? 'Servicio' : 'Producto'}
+                          </span>
+                        </div>
                         {p.description && <div className="text-xs text-muted mt-0.5">{p.description}</div>}
                       </td>
                       <td>
@@ -280,33 +305,43 @@ export const Inventory: React.FC = () => {
                         )}
                       </td>
                       <td className="text-center">
-                        <span
-                          className={`badge ${
-                            p.current_stock === 0
-                              ? 'badge-danger'
-                              : p.is_low_stock
-                              ? 'badge-warning'
-                              : 'badge-success'
-                          }`}
-                        >
-                          {p.current_stock} {p.unit_measure}s
-                        </span>
+                        {isService ? (
+                          <span className="badge badge-info">No aplica ({p.unit_measure})</span>
+                        ) : (
+                          <span
+                            className={`badge ${
+                              p.current_stock === 0
+                                ? 'badge-danger'
+                                : p.is_low_stock
+                                ? 'badge-warning'
+                                : 'badge-success'
+                            }`}
+                          >
+                            {p.current_stock} {p.unit_measure}s
+                          </span>
+                        )}
                       </td>
                       <td className="text-right font-medium font-mono text-primary">{formatCOP(p.sale_price)}</td>
                       <td className="text-right text-muted font-mono">{formatCOP(p.cost_price)}</td>
-                      <td className="text-right font-semibold font-mono text-indigo-600 dark:text-indigo-400">{formatCOP(p.stock_value)}</td>
+                      <td className="text-right font-semibold font-mono text-indigo-600 dark:text-indigo-400">
+                        {isService ? '-' : formatCOP(p.stock_value)}
+                      </td>
                       <td className="text-center">
-                        <button
-                          className="btn btn-sm btn-secondary inline-flex items-center gap-1.5 font-medium shadow-xs hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400"
-                          onClick={() => openAdjustmentModal(p)}
-                          title="Ajustar stock físico"
-                        >
-                          <IconAdjustmentsHorizontal size={14} className="text-indigo-500" />
-                          <span>Ajustar</span>
-                        </button>
+                        {!isService ? (
+                          <button
+                            className="btn btn-sm btn-secondary inline-flex items-center gap-1.5 font-medium shadow-xs hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400"
+                            onClick={() => openAdjustmentModal(p)}
+                            title="Ajustar stock físico"
+                          >
+                            <IconAdjustmentsHorizontal size={14} className="text-indigo-500" />
+                            <span>Ajustar</span>
+                          </button>
+                        ) : (
+                          <span className="text-xs text-muted">Tarifario</span>
+                        )}
                       </td>
                     </tr>
-                  ))
+                  );})
                 )}
               </tbody>
             </table>
@@ -478,24 +513,44 @@ export const Inventory: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL: NUEVO PRODUCTO */}
+      {/* MODAL: NUEVO PRODUCTO O SERVICIO */}
       {showProductModal && (
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-header">
-              <h3 className="font-bold text-base text-primary">Registrar Nuevo Producto</h3>
+              <h3 className="font-bold text-base text-primary">Registrar Producto o Servicio</h3>
               <button className="btn-ghost p-1 rounded-md text-muted hover:text-primary" onClick={() => setShowProductModal(false)}>✕</button>
             </div>
             <form onSubmit={handleCreateProduct}>
               <div className="modal-body space-y-4">
+                <div className="input-group">
+                  <label className="input-label">Tipo de Ítem en Catálogo *</label>
+                  <select
+                    className="input"
+                    value={formData.item_type}
+                    onChange={(e) => {
+                      const nextType = e.target.value as 'product' | 'service';
+                      setFormData({
+                        ...formData,
+                        item_type: nextType,
+                        unit_measure: nextType === 'service' ? 'servicio' : 'unidad',
+                        current_stock: nextType === 'service' ? 0 : formData.current_stock,
+                        min_stock: nextType === 'service' ? 0 : (formData.min_stock || 5),
+                      });
+                    }}
+                  >
+                    <option value="product">Producto Físico (controla stock en bodega)</option>
+                    <option value="service">Servicio / Mano de Obra / Póliza (sin stock físico)</option>
+                  </select>
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div className="input-group">
-                    <label className="input-label">SKU / Código *</label>
+                    <label className="input-label">SKU / Código (Opcional)</label>
                     <input
                       type="text"
-                      required
                       className="input font-mono"
-                      placeholder="ej: GPS-4G-01"
+                      placeholder={formData.item_type === 'service' ? 'Auto (ej: SRV-0001)' : 'Auto (ej: PRD-0001)'}
                       value={formData.sku}
                       onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
                     />
@@ -505,7 +560,7 @@ export const Inventory: React.FC = () => {
                     <input
                       type="text"
                       className="input"
-                      placeholder="ej: Dispositivos"
+                      placeholder={formData.item_type === 'service' ? 'ej: Instalaciones / Soporte' : 'ej: Dispositivos'}
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     />
@@ -518,7 +573,7 @@ export const Inventory: React.FC = () => {
                     type="text"
                     required
                     className="input"
-                    placeholder="ej: GPS Tracker 4G Vehicular"
+                    placeholder={formData.item_type === 'service' ? 'ej: Instalación de Cámara IP' : 'ej: GPS Tracker 4G Vehicular'}
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
@@ -529,7 +584,7 @@ export const Inventory: React.FC = () => {
                   <textarea
                     className="input !h-auto"
                     rows={2}
-                    placeholder="Detalles técnicos o características..."
+                    placeholder="Detalles técnicos o alcance del servicio..."
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   />
@@ -537,7 +592,7 @@ export const Inventory: React.FC = () => {
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="input-group">
-                    <label className="input-label">Precio Venta *</label>
+                    <label className="input-label">Tarifa / Precio Venta *</label>
                     <input
                       type="number"
                       required
@@ -548,10 +603,9 @@ export const Inventory: React.FC = () => {
                     />
                   </div>
                   <div className="input-group">
-                    <label className="input-label">Costo Unitario *</label>
+                    <label className="input-label">Costo Base</label>
                     <input
                       type="number"
-                      required
                       min={0}
                       className="input font-mono"
                       value={formData.cost_price}
@@ -563,34 +617,37 @@ export const Inventory: React.FC = () => {
                     <input
                       type="text"
                       className="input"
+                      placeholder={formData.item_type === 'service' ? 'servicio, hora, mes' : 'unidad, caja'}
                       value={formData.unit_measure}
                       onChange={(e) => setFormData({ ...formData, unit_measure: e.target.value })}
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="input-group">
-                    <label className="input-label">Stock Inicial en Bodega</label>
-                    <input
-                      type="number"
-                      min={0}
-                      className="input font-mono"
-                      value={formData.current_stock}
-                      onChange={(e) => setFormData({ ...formData, current_stock: Number(e.target.value) })}
-                    />
+                {formData.item_type === 'product' && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="input-group">
+                      <label className="input-label">Stock Inicial en Bodega</label>
+                      <input
+                        type="number"
+                        min={0}
+                        className="input font-mono"
+                        value={formData.current_stock}
+                        onChange={(e) => setFormData({ ...formData, current_stock: Number(e.target.value) })}
+                      />
+                    </div>
+                    <div className="input-group">
+                      <label className="input-label">Stock Mínimo de Alerta</label>
+                      <input
+                        type="number"
+                        min={1}
+                        className="input font-mono"
+                        value={formData.min_stock}
+                        onChange={(e) => setFormData({ ...formData, min_stock: Number(e.target.value) })}
+                      />
+                    </div>
                   </div>
-                  <div className="input-group">
-                    <label className="input-label">Stock Mínimo de Alerta</label>
-                    <input
-                      type="number"
-                      min={1}
-                      className="input font-mono"
-                      value={formData.min_stock}
-                      onChange={(e) => setFormData({ ...formData, min_stock: Number(e.target.value) })}
-                    />
-                  </div>
-                </div>
+                )}
               </div>
 
               <div className="modal-footer">
@@ -598,7 +655,7 @@ export const Inventory: React.FC = () => {
                   Cancelar
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? 'Guardando...' : 'Crear Producto'}
+                  {saving ? 'Guardando...' : formData.item_type === 'service' ? 'Crear Servicio' : 'Crear Producto'}
                 </button>
               </div>
             </form>

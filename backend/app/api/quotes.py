@@ -3,7 +3,7 @@ api/quotes.py — Endpoints para Cotizaciones y Presupuestos de Servicios / Prod
 Protegido por el guard modular require_module("quotes").
 """
 from typing import List, Optional
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlmodel import Session, select
@@ -11,6 +11,7 @@ from sqlalchemy import text
 from app.core.database import get_session
 from app.core.tenant import get_tenant_by_api_key
 from app.core.module_guard import require_module
+from app.core.modules import get_merged_module_settings
 from app.models.tenant import Tenant
 from app.models.contact import Contact
 from app.models.quote import Quote
@@ -84,18 +85,27 @@ def create_quote(
             raise HTTPException(status_code=404, detail="El contacto especificado no existe.")
         contact_name = contact.name
 
+    # Leer configuración personalizada del módulo de Cotizaciones
+    quotes_cfg = get_merged_module_settings("quotes", tenant.module_settings)
+    fields_set = getattr(quote_in, "model_fields_set", set())
+    eff_tax_rate = quote_in.tax_rate if "tax_rate" in fields_set else Decimal(str(quotes_cfg.get("default_tax_rate", quote_in.tax_rate)))
+    eff_terms = quote_in.terms if "terms" in fields_set else (quotes_cfg.get("default_terms") or quote_in.terms)
+
     # Generar consecutivo correlativo (ej: COT-0001)
     quote_count = len(session.exec(select(Quote)).all()) + 1
     quote_number = f"COT-{quote_count:04d}"
 
     subtotal, tax, total, serialized_items = _calculate_totals(
-        quote_in.items, quote_in.tax_rate, quote_in.discount
+        quote_in.items, eff_tax_rate, quote_in.discount
     )
 
     now = datetime.now(timezone.utc)
     valid_until = quote_in.valid_until
     if valid_until is not None and valid_until.tzinfo is None:
         valid_until = valid_until.replace(tzinfo=timezone.utc)
+    elif valid_until is None:
+        validity_days = int(quotes_cfg.get("default_validity_days", 15) or 15)
+        valid_until = now + timedelta(days=validity_days)
     
     quote = Quote(
         quote_number=quote_number,
@@ -103,18 +113,17 @@ def create_quote(
         title=quote_in.title,
         status="draft",
         subtotal=subtotal,
-        tax_rate=quote_in.tax_rate,
+        tax_rate=eff_tax_rate,
         tax=tax,
         discount=quote_in.discount,
         total=total,
         items=serialized_items,
-        terms=quote_in.terms,
+        terms=eff_terms,
         notes=quote_in.notes,
         issued_at=now,
+        valid_until=valid_until,
         updated_at=now
     )
-    if valid_until is not None:
-        quote.valid_until = valid_until
 
     session.add(quote)
     session.commit()
@@ -357,9 +366,11 @@ async def convert_quote_to_invoice(
     if not contact:
         raise HTTPException(status_code=404, detail="El cliente asociado a la cotización no existe.")
 
-    # 3. Preparar ítems para Factus API V2
+    # 3. Preparar ítems para Factus API V2 usando el prefijo configurado en module_settings
+    dian_cfg = get_merged_module_settings("dian_invoicing", tenant.module_settings)
+    prefix = (dian_cfg.get("prefix") or "SETT").strip() or "SETT"
     invoice_count = len(session.exec(select(Invoice)).all()) + 1
-    invoice_number = f"SETT-{invoice_count:04d}"
+    invoice_number = f"{prefix}-{invoice_count:04d}"
 
     factus_items = []
     for item in quote.items:
@@ -419,15 +430,17 @@ async def convert_quote_to_invoice(
         )
         session.add(entry)
 
-    # 7. Automatización de Stock si 'inventory' está activo
+    # 7. Automatización de Stock si 'inventory' está activo y el ítem es producto físico (no servicio)
     if "inventory" in modules:
         for item in quote.items:
             sku = item.get("sku")
-            if sku:
+            if sku and item.get("item_type", "service") != "service":
                 qty = int(item.get("quantity", 0))
                 prod = session.exec(select(Product).where(Product.sku == sku)).first()
-                if prod:
+                if prod and (getattr(prod, "item_type", None) or "product") != "service":
+                    now_mov = datetime.now(timezone.utc)
                     prod.current_stock -= qty
+                    prod.updated_at = now_mov
                     session.add(prod)
                     mov = InventoryMovement(
                         product_id=prod.id,
@@ -436,7 +449,8 @@ async def convert_quote_to_invoice(
                         unit_cost=prod.cost_price,
                         reference_type="invoice",
                         reference_id=invoice.id,
-                        notes=f"Salida Factura {invoice.invoice_number} desde {quote.quote_number}"
+                        notes=f"Salida Factura {invoice.invoice_number} desde {quote.quote_number}",
+                        created_at=now_mov
                     )
                     session.add(mov)
 

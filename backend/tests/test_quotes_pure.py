@@ -9,9 +9,12 @@ from fastapi import HTTPException
 from app.core.modules import MODULE_CATALOG, get_all_modules, get_default_modules
 from app.schemas.quote import QuoteCreate, QuoteUpdate, QuoteItem, QuoteResponse
 from app.models.quote import Quote
+from app.models.product import Product
 from app.models.tenant import Tenant
 from app.core.module_guard import require_module
 from app.api.quotes import _calculate_totals
+from app.api.inventory import _to_product_response
+from app.api.catalog import require_catalog_access
 
 def test_quotes_module_catalog_registration():
     """Valida que 'quotes' esté debidamente registrado en el catálogo canónico."""
@@ -115,3 +118,57 @@ def test_quote_guard_allows_when_enabled():
     )
     result = guard(tenant=tenant_with_quotes)
     assert result == tenant_with_quotes
+
+def test_service_product_response_has_no_stock_alerts():
+    """Un servicio nunca debe reportar stock crítico ni valor de bodega."""
+    srv = Product(
+        id=10,
+        sku="SRV-0001",
+        name="Instalación Punto de Red Cat6",
+        item_type="service",
+        unit_measure="servicio",
+        sale_price=Decimal("85000.00"),
+        cost_price=Decimal("20000.00"),
+        current_stock=0,
+        min_stock=0,
+    )
+    resp_srv = _to_product_response(srv)
+    assert resp_srv.item_type == "service"
+    assert resp_srv.stock_value == Decimal("0.00")
+    assert resp_srv.is_low_stock is False
+
+    prod = Product(
+        id=11,
+        sku="PRD-0001",
+        name="Cámara IP 4MP",
+        item_type="product",
+        unit_measure="unidad",
+        sale_price=Decimal("250000.00"),
+        cost_price=Decimal("150000.00"),
+        current_stock=2,
+        min_stock=5,
+    )
+    resp_prod = _to_product_response(prod)
+    assert resp_prod.item_type == "product"
+    assert resp_prod.stock_value == Decimal("300000.00")
+    assert resp_prod.is_low_stock is True
+
+def test_catalog_access_allows_quotes_without_inventory():
+    """Una PyME de servicios con 'quotes' activo pero sin 'inventory' debe poder acceder al catálogo."""
+    tenant_services = Tenant(
+        id=3,
+        name="Tec360 Servicios",
+        schema_name="tenant_3",
+        enabled_modules=["quotes"],
+    )
+    assert require_catalog_access(tenant=tenant_services) == tenant_services
+
+    tenant_none = Tenant(
+        id=4,
+        name="Solo Contabilidad",
+        schema_name="tenant_4",
+        enabled_modules=["accounting"],
+    )
+    with pytest.raises(HTTPException) as exc_info:
+        require_catalog_access(tenant=tenant_none)
+    assert exc_info.value.status_code == 403

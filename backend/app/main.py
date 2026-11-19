@@ -15,6 +15,7 @@ from app.api import accounting
 from app.api import auth
 from app.api import modules
 from app.api import quotes
+from app.api import catalog
 from app.core.database import engine
 
 app = FastAPI(
@@ -44,6 +45,7 @@ app.include_router(crm.router, prefix=f"{settings.API_V1_STR}/crm", tags=["CRM"]
 app.include_router(ml.router, prefix=f"{settings.API_V1_STR}/ml", tags=["Machine Learning Engine"])
 app.include_router(modules.router, prefix=f"{settings.API_V1_STR}/modules", tags=["Tools & Modules"])
 app.include_router(quotes.router, prefix=f"{settings.API_V1_STR}/quotes", tags=["Quotes"])
+app.include_router(catalog.router, prefix=f"{settings.API_V1_STR}/catalog", tags=["Catalog"])
 app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["Authentication"])
 
 @app.on_event("startup")
@@ -133,6 +135,25 @@ def startup_event():
             CREATE INDEX IF NOT EXISTS idx_public_quotes_status ON public.quotes(status);
             CREATE INDEX IF NOT EXISTS idx_public_quotes_contact ON public.quotes(contact_id);
         '''))
+        session.execute(text('''
+            CREATE TABLE IF NOT EXISTS public.products (
+                id SERIAL PRIMARY KEY,
+                sku VARCHAR UNIQUE NOT NULL,
+                name VARCHAR NOT NULL,
+                description TEXT,
+                category VARCHAR,
+                item_type VARCHAR DEFAULT 'product',
+                unit_measure VARCHAR DEFAULT 'unidad',
+                sale_price NUMERIC(12,2) DEFAULT 0,
+                cost_price NUMERIC(12,2) DEFAULT 0,
+                current_stock INTEGER DEFAULT 0,
+                min_stock INTEGER DEFAULT 5,
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            );
+            ALTER TABLE public.products ADD COLUMN IF NOT EXISTS item_type VARCHAR DEFAULT 'product';
+        '''))
         session.commit()
         
         # Cargar blacklist en caché
@@ -150,6 +171,7 @@ def startup_event():
                     name VARCHAR NOT NULL,
                     description TEXT,
                     category VARCHAR,
+                    item_type VARCHAR DEFAULT 'product',
                     unit_measure VARCHAR DEFAULT 'unidad',
                     sale_price NUMERIC(12,2) DEFAULT 0,
                     cost_price NUMERIC(12,2) DEFAULT 0,
@@ -160,6 +182,7 @@ def startup_event():
                     updated_at TIMESTAMP DEFAULT NOW()
                 );
                 ALTER TABLE "{schema}".products ADD COLUMN IF NOT EXISTS description TEXT;
+                ALTER TABLE "{schema}".products ADD COLUMN IF NOT EXISTS item_type VARCHAR DEFAULT 'product';
                 ALTER TABLE "{schema}".products ADD COLUMN IF NOT EXISTS unit_measure VARCHAR DEFAULT 'unidad';
                 ALTER TABLE "{schema}".products ADD COLUMN IF NOT EXISTS sale_price NUMERIC(12,2) DEFAULT 0;
                 ALTER TABLE "{schema}".products ADD COLUMN IF NOT EXISTS cost_price NUMERIC(12,2) DEFAULT 0;

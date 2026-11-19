@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { api } from '../services/api';
-import type { Invoice, Contact } from '../types';
+import { catalogService } from '../services/catalogService';
+import type { Invoice, Contact, Product } from '../types';
 import { 
   IconPlus, 
   IconAlertTriangle, 
@@ -9,7 +10,8 @@ import {
   IconTrash, 
   IconFileInvoice,
   IconRefresh,
-  IconQrcode
+  IconQrcode,
+  IconBolt
 } from '@tabler/icons-react';
 
 interface InvoiceFormItem {
@@ -22,6 +24,7 @@ interface InvoiceFormItem {
 export default function Invoices() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [catalogItems, setCatalogItems] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -42,17 +45,56 @@ export default function Invoices() {
     setIsLoading(true);
     setError('');
     try {
-      const [invData, contData] = await Promise.all([
+      const [invRes, contRes, catRes] = await Promise.allSettled([
         api.get<Invoice[]>('/dian/invoices'),
-        api.get<Contact[]>('/contacts')
+        api.get<Contact[]>('/contacts'),
+        catalogService.getItems(),
       ]);
-      setInvoices(invData || []);
-      setContacts(contData || []);
+      if (invRes.status === 'fulfilled') {
+        setInvoices(invRes.value || []);
+      } else {
+        throw invRes.reason;
+      }
+      if (contRes.status === 'fulfilled') setContacts(contRes.value || []);
+      if (catRes.status === 'fulfilled') setCatalogItems(catRes.value || []);
     } catch {
       setError('Error al cargar datos de facturación');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleInsertCatalogItem = (catalogIdStr: string) => {
+    const prod = catalogItems.find(p => String(p.id) === catalogIdStr);
+    if (!prod) return;
+    const mapped: InvoiceFormItem = {
+      sku: prod.sku,
+      description: prod.name,
+      quantity: 1,
+      unit_price: Number(prod.sale_price) || 0,
+    };
+    if (
+      lineItems.length === 1 &&
+      lineItems[0].sku === 'ITEM-01' &&
+      lineItems[0].description === 'Servicio / Producto'
+    ) {
+      setLineItems([mapped]);
+    } else {
+      setLineItems([...lineItems, mapped]);
+    }
+  };
+
+  const handleApplyCatalogToRow = (index: number, catalogIdStr: string) => {
+    const prod = catalogItems.find(p => String(p.id) === catalogIdStr);
+    if (!prod) return;
+    const newItems = [...lineItems];
+    newItems[index] = {
+      ...newItems[index],
+      sku: prod.sku,
+      description: prod.name,
+      unit_price: Number(prod.sale_price) || 0,
+    };
+    setLineItems(newItems);
   };
 
   const handleAddLine = () => {
@@ -341,7 +383,7 @@ export default function Invoices() {
                 </select>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 <div className="flex justify-between items-center">
                   <label className="input-label !mb-0">Ítems / Conceptos</label>
                   <button 
@@ -353,45 +395,86 @@ export default function Invoices() {
                     <span>Añadir Ítem</span>
                   </button>
                 </div>
+
+                {catalogItems.length > 0 && (
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                    <IconBolt size={15} className="text-indigo-400 shrink-0" />
+                    <select
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value) handleInsertCatalogItem(e.target.value);
+                      }}
+                      className="w-full bg-transparent text-xs font-medium text-indigo-400 focus:outline-hidden"
+                    >
+                      <option value="">⚡ Seleccionar Servicio / Producto del Catálogo...</option>
+                      {catalogItems.map(c => (
+                        <option key={c.id} value={c.id} className="text-slate-900 dark:text-white bg-white dark:bg-slate-900">
+                          {c.item_type === 'service' ? '[Servicio]' : `[${c.sku}]`} {c.name} — {formatMoney(Number(c.sale_price))}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 
                 <div className="space-y-2.5">
                   {lineItems.map((item, index) => (
-                    <div key={index} className="flex gap-2 items-center">
-                      <input 
-                        type="text" 
-                        className="input input-sm flex-1 text-xs" 
-                        placeholder="Descripción" 
-                        required 
-                        value={item.description} 
-                        onChange={e => handleLineChange(index, 'description', e.target.value)} 
-                      />
-                      <input 
-                        type="number" 
-                        className="input input-sm w-16 text-center text-xs font-mono" 
-                        placeholder="Cant" 
-                        min="1" 
-                        required 
-                        value={item.quantity} 
-                        onChange={e => handleLineChange(index, 'quantity', Number(e.target.value))} 
-                      />
-                      <input 
-                        type="number" 
-                        className="input input-sm w-28 text-right text-xs font-mono" 
-                        placeholder="Precio" 
-                        min="0"
-                        required 
-                        value={item.unit_price} 
-                        onChange={e => handleLineChange(index, 'unit_price', Number(e.target.value))} 
-                      />
-                      {lineItems.length > 1 && (
-                        <button 
-                          type="button" 
-                          className="btn-ghost p-1.5 text-red-500 hover:bg-red-500/10 rounded transition-colors shrink-0" 
-                          onClick={() => handleRemoveLine(index)}
-                          title="Eliminar fila"
-                        >
-                          <IconTrash size={15} />
-                        </button>
+                    <div key={index} className="space-y-1.5 p-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-elevated)]/40">
+                      <div className="flex gap-2 items-center">
+                        <input 
+                          type="text" 
+                          className="input input-sm flex-1 text-xs" 
+                          placeholder="Descripción" 
+                          required 
+                          value={item.description} 
+                          onChange={e => handleLineChange(index, 'description', e.target.value)} 
+                        />
+                        <input 
+                          type="number" 
+                          className="input input-sm w-16 text-center text-xs font-mono" 
+                          placeholder="Cant" 
+                          min="1" 
+                          required 
+                          value={item.quantity} 
+                          onChange={e => handleLineChange(index, 'quantity', Number(e.target.value))} 
+                        />
+                        <input 
+                          type="number" 
+                          className="input input-sm w-28 text-right text-xs font-mono" 
+                          placeholder="Precio" 
+                          min="0"
+                          required 
+                          value={item.unit_price} 
+                          onChange={e => handleLineChange(index, 'unit_price', Number(e.target.value))} 
+                        />
+                        {lineItems.length > 1 && (
+                          <button 
+                            type="button" 
+                            className="btn-ghost p-1.5 text-red-500 hover:bg-red-500/10 rounded transition-colors shrink-0" 
+                            onClick={() => handleRemoveLine(index)}
+                            title="Eliminar fila"
+                          >
+                            <IconTrash size={15} />
+                          </button>
+                        )}
+                      </div>
+                      {catalogItems.length > 0 && (
+                        <div className="flex items-center justify-between gap-2 text-[11px] text-muted">
+                          <select
+                            value=""
+                            onChange={(e) => {
+                              if (e.target.value) handleApplyCatalogToRow(index, e.target.value);
+                            }}
+                            className="bg-transparent border border-[var(--border-default)] rounded px-1.5 py-0.5 text-[11px] text-secondary max-w-[240px]"
+                          >
+                            <option value="">Rellenar fila desde Catálogo...</option>
+                            {catalogItems.map(c => (
+                              <option key={c.id} value={c.id} className="text-slate-900 dark:text-white bg-white dark:bg-slate-900">
+                                {c.item_type === 'service' ? '[SRV]' : '[PRD]'} {c.name} ({formatMoney(Number(c.sale_price))})
+                              </option>
+                            ))}
+                          </select>
+                          <span className="font-mono text-[10px]">SKU: {item.sku}</span>
+                        </div>
                       )}
                     </div>
                   ))}

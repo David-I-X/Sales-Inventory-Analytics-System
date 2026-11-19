@@ -3,16 +3,19 @@ modules.py — API Router para Gestión y Activación de Módulos "A la Carta".
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session
+from sqlalchemy.orm.attributes import flag_modified
 from typing import List
 from app.core.database import get_session
 from app.core.tenant import get_tenant_by_api_key
 from app.models.tenant import Tenant
-from app.core.modules import MODULE_CATALOG, get_all_modules
+from app.core.modules import MODULE_CATALOG, get_all_modules, get_merged_module_settings
 from app.schemas.module import (
     ModuleStatusResponse,
     ModuleCatalogResponse,
     ModuleToggleRequest,
-    ModuleToggleResponse
+    ModuleToggleResponse,
+    ModuleSettingsUpdate,
+    ModuleSettingsResponse,
 )
 
 router = APIRouter()
@@ -41,7 +44,8 @@ def list_tenant_modules(
             icon=mod.icon,
             dependencies=mod.dependencies,
             is_enabled=is_on,
-            unmet_dependencies=unmet
+            unmet_dependencies=unmet,
+            settings=get_merged_module_settings(mod.slug, tenant.module_settings),
         ))
 
     return ModuleCatalogResponse(
@@ -121,4 +125,61 @@ def toggle_module(
         is_enabled=new_state,
         enabled_modules=current_modules,
         message=msg
+    )
+
+
+@router.get("/{slug}/settings", response_model=ModuleSettingsResponse)
+def get_module_settings(
+    slug: str,
+    tenant: Tenant = Depends(get_tenant_by_api_key),
+):
+    """Retorna la configuración actual (combinada con defaults) de un módulo para el tenant."""
+    if slug not in MODULE_CATALOG:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"El módulo '{slug}' no existe en el catálogo de herramientas.",
+        )
+    mod_def = MODULE_CATALOG[slug]
+    merged = get_merged_module_settings(slug, tenant.module_settings)
+    return ModuleSettingsResponse(
+        slug=slug,
+        name=mod_def.name,
+        settings=merged,
+        message="Configuración cargada exitosamente.",
+    )
+
+
+@router.put("/{slug}/settings", response_model=ModuleSettingsResponse)
+@router.patch("/{slug}/settings", response_model=ModuleSettingsResponse, include_in_schema=False)
+def update_module_settings(
+    slug: str,
+    payload: ModuleSettingsUpdate,
+    tenant: Tenant = Depends(get_tenant_by_api_key),
+    session: Session = Depends(get_session),
+):
+    """Guarda los ajustes específicos del módulo dentro de tenant.module_settings."""
+    if slug not in MODULE_CATALOG:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"El módulo '{slug}' no existe en el catálogo de herramientas.",
+        )
+
+    mod_def = MODULE_CATALOG[slug]
+    current_merged = get_merged_module_settings(slug, tenant.module_settings)
+    current_merged.update(payload.settings or {})
+
+    all_settings = dict(tenant.module_settings or {})
+    all_settings[slug] = current_merged
+    tenant.module_settings = all_settings
+    flag_modified(tenant, "module_settings")
+
+    session.add(tenant)
+    session.flush()
+    session.commit()
+
+    return ModuleSettingsResponse(
+        slug=slug,
+        name=mod_def.name,
+        settings=current_merged,
+        message=f"Configuración de '{mod_def.name}' guardada exitosamente.",
     )

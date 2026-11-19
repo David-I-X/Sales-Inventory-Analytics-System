@@ -1,8 +1,17 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { quoteService } from '../services/quoteService';
+import { catalogService } from '../services/catalogService';
+import { moduleService } from '../services/moduleService';
 import { api } from '../services/api';
-import type { Quote, QuoteItem, Contact, ConvertToInvoiceResponse } from '../types';
+import type {
+  Quote,
+  QuoteItem,
+  Contact,
+  ConvertToInvoiceResponse,
+  Product,
+  ModuleSettingValue,
+} from '../types';
 import { useAuth } from '../context/AuthContext';
 import {
   IconPlus,
@@ -15,7 +24,10 @@ import {
   IconSend,
   IconFileInvoice,
   IconAlertCircle,
-  IconCalendar
+  IconCalendar,
+  IconPackages,
+  IconBolt,
+  IconBookmarkPlus
 } from '@tabler/icons-react';
 
 interface QuoteFormItem {
@@ -31,9 +43,24 @@ export default function Quotes() {
   const { hasModule } = useAuth();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [catalogItems, setCatalogItems] = useState<Product[]>([]);
+  const [quoteDefaults, setQuoteDefaults] = useState<Record<string, ModuleSettingValue>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  // Modal Catálogo / Tarifario Rápido
+  const [isCatalogModalOpen, setIsCatalogModalOpen] = useState(false);
+  const [catalogSaving, setCatalogSaving] = useState(false);
+  const [newCatalogItem, setNewCatalogItem] = useState({
+    name: '',
+    sku: '',
+    category: '',
+    item_type: 'service' as 'service' | 'product',
+    unit_measure: 'servicio',
+    sale_price: 0,
+    description: '',
+  });
 
   // Filtros
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -70,12 +97,20 @@ export default function Quotes() {
     setError('');
     try {
       const statusParam = statusFilter === 'all' ? undefined : statusFilter;
-      const [quotesData, contactsData] = await Promise.all([
+      const [quotesRes, contactsRes, catalogRes, settingsRes] = await Promise.allSettled([
         quoteService.getQuotes(statusParam),
-        api.get<Contact[]>('/contacts')
+        api.get<Contact[]>('/contacts'),
+        catalogService.getItems(),
+        moduleService.getModuleSettings('quotes'),
       ]);
-      setQuotes(quotesData || []);
-      setContacts(contactsData || []);
+      if (quotesRes.status === 'fulfilled') {
+        setQuotes(quotesRes.value || []);
+      } else {
+        throw quotesRes.reason;
+      }
+      if (contactsRes.status === 'fulfilled') setContacts(contactsRes.value || []);
+      if (catalogRes.status === 'fulfilled') setCatalogItems(catalogRes.value || []);
+      if (settingsRes.status === 'fulfilled') setQuoteDefaults(settingsRes.value.settings || {});
     } catch {
       setError('Error al cargar cotizaciones. Verifica tu conexión.');
     } finally {
@@ -87,11 +122,16 @@ export default function Quotes() {
     setEditingQuoteId(null);
     setTitle('Cotización de Servicios / Productos');
     setContactId('');
-    setTaxRate(0.19);
+    const defTax = Number(quoteDefaults.default_tax_rate ?? 0.19);
+    const defTerms = String(
+      quoteDefaults.default_terms ?? 'Validez de la oferta: 15 días. Pago: 50% anticipo, 50% entrega.'
+    );
+    const defDays = Number(quoteDefaults.default_validity_days ?? 15);
+    setTaxRate(Number.isNaN(defTax) ? 0.19 : defTax);
     setGlobalDiscount(0);
-    setTerms('Validez de la oferta: 15 días. Pago: 50% anticipo, 50% entrega.');
+    setTerms(defTerms);
     setNotes('');
-    setValidUntilDays(15);
+    setValidUntilDays(Number.isNaN(defDays) ? 15 : defDays);
     setFormItems([
       { description: 'Servicio Profesional / Instalación Tec360', quantity: 1, unit_price: 350000, discount: 0, item_type: 'service' }
     ]);
@@ -142,6 +182,103 @@ export default function Quotes() {
     const updated = [...formItems];
     updated[index] = { ...updated[index], [field]: value };
     setFormItems(updated);
+  };
+
+  const handleInsertCatalogItem = (catalogIdStr: string) => {
+    const prod = catalogItems.find(p => String(p.id) === catalogIdStr);
+    if (!prod) return;
+    const mapped: QuoteFormItem = {
+      description: prod.name,
+      quantity: 1,
+      unit_price: Number(prod.sale_price) || 0,
+      discount: 0,
+      item_type: prod.item_type === 'product' ? 'product' : 'service',
+      sku: prod.sku,
+    };
+    if (
+      formItems.length === 1 &&
+      (!formItems[0].description.trim() ||
+        formItems[0].description === 'Servicio Profesional / Instalación Tec360') &&
+      !formItems[0].sku
+    ) {
+      setFormItems([mapped]);
+    } else {
+      setFormItems([...formItems, mapped]);
+    }
+  };
+
+  const handleApplyCatalogToRow = (index: number, catalogIdStr: string) => {
+    const prod = catalogItems.find(p => String(p.id) === catalogIdStr);
+    if (!prod) return;
+    const updated = [...formItems];
+    updated[index] = {
+      ...updated[index],
+      description: prod.name,
+      unit_price: Number(prod.sale_price) || 0,
+      item_type: prod.item_type === 'product' ? 'product' : 'service',
+      sku: prod.sku,
+    };
+    setFormItems(updated);
+  };
+
+  const handleSaveLineToCatalog = async (item: QuoteFormItem) => {
+    if (!item.description.trim()) return;
+    try {
+      const created = await catalogService.createItem({
+        name: item.description.trim(),
+        sku: item.sku || undefined,
+        item_type: item.item_type,
+        unit_measure: item.item_type === 'service' ? 'servicio' : 'unidad',
+        sale_price: Number(item.unit_price) || 0,
+      });
+      setCatalogItems(prev => [...prev, created]);
+      setSuccessMsg(`"${created.name}" guardado en el Tarifario (${created.sku}).`);
+      setTimeout(() => setSuccessMsg(''), 3500);
+    } catch {
+      setError('No se pudo guardar el ítem en el catálogo (verifica si el SKU ya existe).');
+    }
+  };
+
+  const handleCreateCatalogItem = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!newCatalogItem.name.trim()) return;
+    setCatalogSaving(true);
+    try {
+      const created = await catalogService.createItem({
+        name: newCatalogItem.name.trim(),
+        sku: newCatalogItem.sku.trim() || undefined,
+        category: newCatalogItem.category.trim() || undefined,
+        item_type: newCatalogItem.item_type,
+        unit_measure: newCatalogItem.unit_measure.trim() || 'servicio',
+        sale_price: Number(newCatalogItem.sale_price) || 0,
+        description: newCatalogItem.description.trim() || undefined,
+      });
+      setCatalogItems(prev => [...prev, created]);
+      setNewCatalogItem({
+        name: '',
+        sku: '',
+        category: '',
+        item_type: 'service',
+        unit_measure: 'servicio',
+        sale_price: 0,
+        description: '',
+      });
+      setSuccessMsg(`Ítem "${created.name}" (${created.sku}) agregado al catálogo.`);
+      setTimeout(() => setSuccessMsg(''), 3500);
+    } catch {
+      setError('Error al crear ítem en el catálogo.');
+    } finally {
+      setCatalogSaving(false);
+    }
+  };
+
+  const handleDeleteCatalogItem = async (id: number) => {
+    try {
+      await catalogService.deleteItem(id);
+      setCatalogItems(prev => prev.filter(p => p.id !== id));
+    } catch {
+      setError('No se pudo eliminar el ítem del catálogo.');
+    }
   };
 
   // Cálculos en vivo
@@ -286,13 +423,23 @@ export default function Quotes() {
             Gestión comercial para PyMEs de servicios y productos: emite propuestas, actualiza tarifas y convierte a Factura DIAN.
           </p>
         </div>
-        <button
-          onClick={handleOpenCreateModal}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
-        >
-          <IconPlus size={18} />
-          Nueva Cotización
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setIsCatalogModalOpen(true)}
+            className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-sm font-medium rounded-lg shadow-xs transition-colors"
+            title="Gestionar Tarifario de Servicios y Productos"
+          >
+            <IconPackages size={18} className="text-indigo-500" />
+            Catálogo / Tarifario ({catalogItems.length})
+          </button>
+          <button
+            onClick={handleOpenCreateModal}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
+          >
+            <IconPlus size={18} />
+            Nueva Cotización
+          </button>
+        </div>
       </div>
 
       {/* Alertas */}
@@ -546,79 +693,150 @@ export default function Quotes() {
 
               {/* Lista dinámica de ítems */}
               <div>
-                <div className="flex justify-between items-center mb-2">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                     Líneas de Servicios / Productos
                   </label>
-                  <button
-                    type="button"
-                    onClick={handleAddItem}
-                    className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline inline-flex items-center gap-1"
-                  >
-                    <IconPlus size={14} /> Agregar Línea
-                  </button>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="inline-flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-lg px-2 py-1">
+                      <IconBolt size={14} className="text-indigo-500 shrink-0" />
+                      <select
+                        value=""
+                        onChange={(e) => {
+                          if (e.target.value) handleInsertCatalogItem(e.target.value);
+                        }}
+                        className="text-xs bg-transparent text-indigo-700 dark:text-indigo-300 font-medium focus:outline-hidden max-w-[230px]"
+                      >
+                        <option value="">⚡ Agregar desde Catálogo / Tarifario...</option>
+                        {catalogItems.some(c => (c.item_type || 'product') === 'service') && (
+                          <optgroup label="Servicios">
+                            {catalogItems
+                              .filter(c => (c.item_type || 'product') === 'service')
+                              .map(c => (
+                                <option key={c.id} value={c.id}>
+                                  {c.name} — ${Number(c.sale_price).toLocaleString('es-CO')}
+                                </option>
+                              ))}
+                          </optgroup>
+                        )}
+                        {catalogItems.some(c => (c.item_type || 'product') !== 'service') && (
+                          <optgroup label="Productos">
+                            {catalogItems
+                              .filter(c => (c.item_type || 'product') !== 'service')
+                              .map(c => (
+                                <option key={c.id} value={c.id}>
+                                  [{c.sku}] {c.name} — ${Number(c.sale_price).toLocaleString('es-CO')}
+                                </option>
+                              ))}
+                          </optgroup>
+                        )}
+                      </select>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddItem}
+                      className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline inline-flex items-center gap-1"
+                    >
+                      <IconPlus size={14} /> Línea Manual
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                   {formItems.map((item, idx) => (
-                    <div key={idx} className="flex flex-col sm:flex-row gap-2 items-start sm:items-center p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-                      <div className="w-full sm:w-28 shrink-0">
-                        <select
-                          value={item.item_type}
-                          onChange={(e) => handleItemChange(idx, 'item_type', e.target.value)}
-                          className="w-full px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                        >
-                          <option value="service">Servicio</option>
-                          <option value="product">Producto</option>
-                        </select>
-                      </div>
+                    <div key={idx} className="flex flex-col gap-2 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+                      <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                        <div className="w-full sm:w-28 shrink-0">
+                          <select
+                            value={item.item_type}
+                            onChange={(e) => handleItemChange(idx, 'item_type', e.target.value)}
+                            className="w-full px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                          >
+                            <option value="service">Servicio</option>
+                            <option value="product">Producto</option>
+                          </select>
+                        </div>
 
-                      <div className="w-full sm:flex-1">
-                        <input
-                          type="text"
-                          required
-                          placeholder="Descripción del servicio o producto..."
-                          value={item.description}
-                          onChange={(e) => handleItemChange(idx, 'description', e.target.value)}
-                          className="w-full px-2.5 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                        />
-                      </div>
-
-                      <div className="flex gap-2 w-full sm:w-auto">
-                        <div className="w-20">
+                        <div className="w-full sm:flex-1">
                           <input
-                            type="number"
-                            min="1"
-                            step="1"
-                            placeholder="Cant."
-                            value={item.quantity}
-                            onChange={(e) => handleItemChange(idx, 'quantity', Number(e.target.value))}
-                            className="w-full px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-right"
+                            type="text"
+                            required
+                            placeholder="Descripción del servicio o producto..."
+                            value={item.description}
+                            onChange={(e) => handleItemChange(idx, 'description', e.target.value)}
+                            className="w-full px-2.5 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
                           />
                         </div>
 
-                        <div className="w-32">
-                          <input
-                            type="number"
-                            min="0"
-                            step="1000"
-                            placeholder="Precio Unit."
-                            value={item.unit_price}
-                            onChange={(e) => handleItemChange(idx, 'unit_price', Number(e.target.value))}
-                            className="w-full px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-right"
-                          />
-                        </div>
+                        <div className="flex gap-2 w-full sm:w-auto items-center">
+                          <div className="w-20">
+                            <input
+                              type="number"
+                              min="1"
+                              step="1"
+                              placeholder="Cant."
+                              value={item.quantity}
+                              onChange={(e) => handleItemChange(idx, 'quantity', Number(e.target.value))}
+                              className="w-full px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-right"
+                            />
+                          </div>
 
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveItem(idx)}
-                          disabled={formItems.length === 1}
-                          className="p-1.5 text-slate-400 hover:text-red-500 disabled:opacity-30 transition-colors"
-                          title="Eliminar línea"
-                        >
-                          <IconTrash size={16} />
-                        </button>
+                          <div className="w-32">
+                            <input
+                              type="number"
+                              min="0"
+                              step="1000"
+                              placeholder="Precio Unit."
+                              value={item.unit_price}
+                              onChange={(e) => handleItemChange(idx, 'unit_price', Number(e.target.value))}
+                              className="w-full px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-right"
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleSaveLineToCatalog(item)}
+                            className="p-1.5 text-slate-400 hover:text-indigo-500 transition-colors"
+                            title="Guardar esta línea en el Catálogo / Tarifario"
+                          >
+                            <IconBookmarkPlus size={16} />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveItem(idx)}
+                            disabled={formItems.length === 1}
+                            className="p-1.5 text-slate-400 hover:text-red-500 disabled:opacity-30 transition-colors"
+                            title="Eliminar línea"
+                          >
+                            <IconTrash size={16} />
+                          </button>
+                        </div>
                       </div>
+
+                      {catalogItems.length > 0 && (
+                        <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                          <select
+                            value=""
+                            onChange={(e) => {
+                              if (e.target.value) handleApplyCatalogToRow(idx, e.target.value);
+                            }}
+                            className="px-2 py-1 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 text-[11px] max-w-xs"
+                          >
+                            <option value="">Rellenar esta fila con ítem del catálogo...</option>
+                            {catalogItems.map(c => (
+                              <option key={c.id} value={c.id}>
+                                {c.item_type === 'service' ? '[SRV]' : '[PRD]'} {c.name} (${Number(c.sale_price).toLocaleString('es-CO')})
+                              </option>
+                            ))}
+                          </select>
+                          {item.sku && (
+                            <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-slate-700/60">
+                              SKU: {item.sku}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -826,6 +1044,153 @@ export default function Quotes() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL CATÁLOGO / TARIFARIO DE SERVICIOS Y PRODUCTOS      */}
+      {/* ======================================================== */}
+      {isCatalogModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-3xl w-full p-6 shadow-xl border border-slate-200 dark:border-slate-800 my-8 space-y-5">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <IconPackages className="text-indigo-500" size={22} />
+                Catálogo / Tarifario de Servicios y Productos
+              </h2>
+              <button
+                onClick={() => setIsCatalogModalOpen(false)}
+                className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <IconX size={20} />
+              </button>
+            </div>
+
+            {/* Formulario rápido para agregar al tarifario */}
+            <form onSubmit={handleCreateCatalogItem} className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                Agregar Nuevo Servicio o Producto Reutilizable
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                <select
+                  value={newCatalogItem.item_type}
+                  onChange={(e) => {
+                    const t = e.target.value as 'service' | 'product';
+                    setNewCatalogItem({
+                      ...newCatalogItem,
+                      item_type: t,
+                      unit_measure: t === 'service' ? 'servicio' : 'unidad',
+                    });
+                  }}
+                  className="px-2.5 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                >
+                  <option value="service">Servicio / Póliza</option>
+                  <option value="product">Producto</option>
+                </select>
+                <input
+                  type="text"
+                  required
+                  placeholder="Nombre (Ej: Instalación Cámara IP)"
+                  value={newCatalogItem.name}
+                  onChange={(e) => setNewCatalogItem({ ...newCatalogItem, name: e.target.value })}
+                  className="sm:col-span-2 px-2.5 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                />
+                <input
+                  type="number"
+                  required
+                  min={0}
+                  step="1000"
+                  placeholder="Tarifa ($ COP)"
+                  value={newCatalogItem.sale_price}
+                  onChange={(e) => setNewCatalogItem({ ...newCatalogItem, sale_price: Number(e.target.value) })}
+                  className="px-2.5 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-mono text-right"
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                <input
+                  type="text"
+                  placeholder="Código / SKU (Opcional)"
+                  value={newCatalogItem.sku}
+                  onChange={(e) => setNewCatalogItem({ ...newCatalogItem, sku: e.target.value })}
+                  className="px-2.5 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-mono"
+                />
+                <input
+                  type="text"
+                  placeholder="Categoría (Ej: CCTV, Soporte)"
+                  value={newCatalogItem.category}
+                  onChange={(e) => setNewCatalogItem({ ...newCatalogItem, category: e.target.value })}
+                  className="px-2.5 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                />
+                <input
+                  type="text"
+                  placeholder="Unidad (servicio, hora, mes)"
+                  value={newCatalogItem.unit_measure}
+                  onChange={(e) => setNewCatalogItem({ ...newCatalogItem, unit_measure: e.target.value })}
+                  className="px-2.5 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                />
+                <button
+                  type="submit"
+                  disabled={catalogSaving}
+                  className="px-3 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50"
+                >
+                  {catalogSaving ? 'Guardando...' : '+ Guardar en Tarifario'}
+                </button>
+              </div>
+            </form>
+
+            {/* Listado de ítems */}
+            <div className="max-h-72 overflow-y-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+              {catalogItems.length === 0 ? (
+                <div className="p-8 text-center text-xs text-slate-500">
+                  Aún no hay servicios ni productos registrados en el tarifario.
+                </div>
+              ) : (
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 uppercase">
+                    <tr>
+                      <th className="px-3 py-2">Código</th>
+                      <th className="px-3 py-2">Tipo</th>
+                      <th className="px-3 py-2">Nombre / Unidad</th>
+                      <th className="px-3 py-2 text-right">Tarifa</th>
+                      <th className="px-3 py-2 text-right">Quitar</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {catalogItems.map((c) => (
+                      <tr key={c.id}>
+                        <td className="px-3 py-2 font-mono text-indigo-600 dark:text-indigo-400">{c.sku}</td>
+                        <td className="px-3 py-2">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                            (c.item_type || 'product') === 'service'
+                              ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-300'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                          }`}>
+                            {(c.item_type || 'product') === 'service' ? 'Servicio' : 'Producto'}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 font-medium text-slate-800 dark:text-slate-200">
+                          {c.name} <span className="text-slate-400">({c.unit_measure})</span>
+                        </td>
+                        <td className="px-3 py-2 text-right font-mono font-semibold text-slate-900 dark:text-white">
+                          ${Number(c.sale_price).toLocaleString('es-CO')}
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCatalogItem(c.id)}
+                            className="p-1 text-slate-400 hover:text-red-500"
+                            title="Desactivar del catálogo"
+                          >
+                            <IconTrash size={14} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
           </div>
         </div>
       )}

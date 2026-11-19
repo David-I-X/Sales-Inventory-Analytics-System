@@ -1,11 +1,12 @@
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlmodel import Session, select
 from app.core.database import get_session
 from app.core.tenant import get_tenant_by_api_key
 from app.core.module_guard import require_module
+from app.core.modules import get_merged_module_settings
 from app.models.tenant import Tenant
 from app.models.contact import Contact
 from app.models.invoice import Invoice
@@ -46,9 +47,11 @@ async def create_invoice(
     tax = subtotal * Decimal("0.19")
     total = subtotal + tax
     
-    # Generate sequential invoice number (e.g., SETT-0001)
+    # Generate sequential invoice number using tenant's configured prefix (e.g., SETT-0001)
+    dian_cfg = get_merged_module_settings("dian_invoicing", tenant.module_settings)
+    prefix = (dian_cfg.get("prefix") or "SETT").strip() or "SETT"
     invoice_count = len(session.exec(select(Invoice)).all()) + 1
-    invoice_number = f"SETT-{invoice_count:04d}"
+    invoice_number = f"{prefix}-{invoice_count:04d}"
     
     # 3. Envío a la DIAN a través de Factus API V2
     dian_response = await dian_service.send_invoice({
@@ -69,6 +72,7 @@ async def create_invoice(
     official_number = dian_response.get("number") or invoice_number
 
     # 4. Crear factura con respuesta de la DIAN en una sola transacción limpia
+    now = datetime.now(timezone.utc)
     invoice = Invoice(
         tenant_id=tenant.id,
         contact_id=contact.id,
@@ -80,7 +84,8 @@ async def create_invoice(
         line_items=serialized_items,
         dian_status=dian_response.get("status", "accepted"),
         dian_response=dian_response,
-        dian_responded_at=datetime.utcnow()
+        issued_at=now,
+        dian_responded_at=now
     )
     
     session.add(invoice)
@@ -98,7 +103,8 @@ async def create_invoice(
                 description=f"Comisión Factura {invoice.invoice_number} - {contact.name}",
                 reference_type="invoice",
                 reference_id=invoice.id,
-                entry_date=datetime.utcnow()
+                entry_date=now,
+                created_at=now
             )
             session.add(accounting_entry)
         elif invoice_in.auto_accounting:
@@ -110,18 +116,19 @@ async def create_invoice(
                 description=f"Factura {invoice.invoice_number} - {contact.name}",
                 reference_type="invoice",
                 reference_id=invoice.id,
-                entry_date=datetime.utcnow()
+                entry_date=now,
+                created_at=now
             )
             session.add(accounting_entry)
     
-    # 6. AUTOMATIZACIÓN 2: Descontar stock SOLO si el módulo 'inventory' está activo
+    # 6. AUTOMATIZACIÓN 2: Descontar stock SOLO si el módulo 'inventory' está activo y el ítem es producto físico
     if "inventory" in modules:
         for item in invoice_in.items:
             if item.sku:
                 product = session.exec(select(Product).where(Product.sku == item.sku)).first()
-                if product:
+                if product and (getattr(product, "item_type", None) or "product") != "service":
                     product.current_stock -= item.quantity
-                    product.updated_at = datetime.utcnow()
+                    product.updated_at = now
                     session.add(product)
                     
                     movement = InventoryMovement(
@@ -131,7 +138,8 @@ async def create_invoice(
                         unit_cost=product.cost_price,
                         reference_type="invoice",
                         reference_id=invoice.id,
-                        notes=f"Venta en Factura #{invoice.invoice_number} a {contact.name}"
+                        notes=f"Venta en Factura #{invoice.invoice_number} a {contact.name}",
+                        created_at=now
                     )
                     session.add(movement)
     
