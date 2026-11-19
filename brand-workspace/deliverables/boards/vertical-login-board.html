@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vertical — Login Design Board (Desktop 1440×900 & Mobile 390×844)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-canvas: #FFFFFF;
+      --bg-surface: #FAFAFA;
+      --bg-subtle: #F4F4F5;
+      --border-subtle: #E4E4E7;
+      --border-strong: #D4D4D8;
+      --text-primary: #09090B;
+      --text-secondary: #52525B;
+      --text-muted: #63636E;
+      --brand-primary: #059669;
+      --brand-solid: #047857;
+      --brand-on-primary: #FFFFFF;
+      --brand-hover: #065F46;
+      --brand-subtle: #ECFDF5;
+      --brand-border: #A7F3D0;
+      --ml-accent: #7C3AED;
+      --ml-text: #6D28D9;
+      --ml-subtle: #F5F3FF;
+      --ml-border: #DDD6FE;
+      --status-success-text: #065F46;
+      --status-success-bg: #ECFDF5;
+      --font-sans: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'Geist Mono', 'JetBrains Mono', monospace;
+    }
+
+    .theme-dark {
+      --bg-canvas: #09090B;
+      --bg-surface: #111114;
+      --bg-subtle: #18181B;
+      --border-subtle: #27272A;
+      --border-strong: #3F3F46;
+      --text-primary: #FAFAFA;
+      --text-secondary: #A1A1AA;
+      --text-muted: #8E8E98;
+      --brand-primary: #10B981;
+      --brand-solid: #10B981;
+      --brand-on-primary: #09090B;
+      --brand-hover: #34D399;
+      --brand-subtle: rgba(16, 185, 129, 0.12);
+      --brand-border: rgba(16, 185, 129, 0.28);
+      --ml-accent: #8B5CF6;
+      --ml-text: #C4B5FD;
+      --ml-subtle: rgba(139, 92, 246, 0.12);
+      --ml-border: rgba(139, 92, 246, 0.28);
+      --status-success-text: #34D399;
+      --status-success-bg: rgba(16, 185, 129, 0.12);
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: #E4E4E7;
+      color: #09090B;
+      -webkit-font-smoothing: antialiased;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 48px;
+    }
+
+    .mono {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .board-desktop {
+      width: 1440px;
+      height: 900px;
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      display: grid;
+      grid-template-columns: 540px 900px;
+      overflow: hidden;
+    }
+
+    /* Columna Izquierda: Autenticación */
+    .auth-col {
+      background: var(--bg-canvas);
+      padding: 32px 56px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .auth-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand-lockup {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-primary);
+    }
+
+    .brand-name {
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    .theme-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 32px;
+      padding: 0 11px;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .auth-main {
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 10px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .seg-tab {
+      height: 32px;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .seg-tab.active {
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+      font-weight: 600;
+    }
+
+    .auth-heading h1 {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.2;
+      color: var(--text-primary);
+    }
+
+    .auth-heading p {
+      margin-top: 6px;
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      line-height: 1.45;
+    }
+
+    .form-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .input-box {
+      height: 40px;
+      border-radius: 8px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-canvas);
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 13.5px;
+      color: var(--text-primary);
+    }
+
+    .input-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .icon-muted {
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+
+    .session-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .checkbox-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      color: var(--text-secondary);
+    }
+
+    .checkbox-box {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      background: var(--brand-solid);
+      color: var(--brand-on-primary);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .sec-chip {
+      font-size: 11px;
+      color: var(--text-muted);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    .btn-primary {
+      height: 40px;
+      width: 100%;
+      border-radius: 8px;
+      background: var(--brand-solid);
+      color: var(--brand-on-primary);
+      font-size: 13.5px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .demo-card {
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .demo-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .demo-title {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .demo-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .btn-secondary-sm {
+      height: 30px;
+      padding: 0 10px;
+      border-radius: 7px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      font-size: 11.5px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .auth-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+
+    /* Columna Derecha: Showcase B2B */
+    .showcase-col {
+      background: var(--bg-surface);
+      border-left: 1px solid var(--border-subtle);
+      padding: 40px 56px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .showcase-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .badge-dian {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 11px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      background: var(--status-success-bg);
+      color: var(--status-success-text);
+      border: 1px solid var(--brand-border);
+    }
+
+    .badge-mono {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 500;
+      background: var(--bg-canvas);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .showcase-hero {
+      max-width: 680px;
+    }
+
+    .showcase-hero h2 {
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.18;
+      color: var(--text-primary);
+    }
+
+    .showcase-hero p {
+      margin-top: 10px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+
+    .bento-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .bento-card {
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .bento-card.full {
+      grid-column: 1 / -1;
+    }
+
+    .card-kicker {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .flow-row {
+      display: grid;
+      grid-template-columns: 1fr 20px 1fr 20px 1fr;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .flow-node {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .flow-node.highlight {
+      border-color: var(--brand-border);
+      background: var(--brand-subtle);
+    }
+
+    .flow-step {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .flow-node.highlight .flow-step {
+      color: var(--status-success-text);
+    }
+
+    .flow-code {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .flow-meta {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .flow-arrow {
+      color: var(--text-muted);
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .ml-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--ml-subtle);
+      color: var(--ml-text);
+      border: 1px solid var(--ml-border);
+    }
+
+    .big-stat {
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      color: var(--text-primary);
+      line-height: 1.1;
+    }
+
+    .sub-caption {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.45;
+    }
+
+    .modules-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .mod-pill {
+      font-size: 11.5px;
+      font-weight: 500;
+      padding: 4px 9px;
+      border-radius: 6px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+    }
+
+    .mod-pill.on {
+      border-color: var(--brand-border);
+      background: var(--brand-subtle);
+      color: var(--status-success-text);
+      font-weight: 600;
+    }
+
+    .showcase-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Mobile Frame 390 x 844 */
+    .board-mobile {
+      width: 390px;
+      height: 844px;
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+
+    .mobile-body {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .mobile-footer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. DESKTOP LIGHT (1440 x 900) -->
+  <section id="board-login-desktop-light" class="board-desktop">
+    <div class="auth-col">
+      <div class="auth-topbar">
+        <div class="brand-lockup">
+          <svg width="30" height="30" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <path d="M4.5 9.95C4.5 9.28726 5.03726 8.75 5.7 8.75H9.3C9.96274 8.75 10.5 9.28726 10.5 9.95V21.25L4.5 15.25V9.95Z" fill="currentColor"/>
+            <path d="M13 13.95C13 13.2873 13.5373 12.75 14.2 12.75H17.8C18.4627 12.75 19 13.2873 19 13.95V23.75L16 26.75L13 23.75V13.95Z" fill="currentColor"/>
+            <path d="M21.5 6.45C21.5 5.78726 22.0373 5.25 22.7 5.25H26.3C26.9627 5.25 27.5 5.78726 27.5 6.45V15.25L21.5 21.25V6.45Z" fill="currentColor"/>
+          </svg>
+          <span class="brand-name">Vertical</span>
+        </div>
+        <div class="theme-pill">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+          <span>Tema Claro</span>
+        </div>
+      </div>
+
+      <div class="auth-main">
+        <div class="segmented">
+          <div class="seg-tab active">Iniciar Sesión</div>
+          <div class="seg-tab">Crear Empresa</div>
+        </div>
+
+        <div class="auth-heading">
+          <h1>Iniciar sesión en Vertical</h1>
+          <p>Accede al centro de control comercial, fiscal y predictivo de tu empresa.</p>
+        </div>
+
+        <div class="form-fields">
+          <div class="field-group">
+            <label class="field-label">Correo Electrónico</label>
+            <div class="input-box">
+              <div class="input-left">
+                <svg class="icon-muted" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+                <span>admin@demo.com</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Contraseña</label>
+            <div class="input-box">
+              <div class="input-left">
+                <svg class="icon-muted" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                <span class="mono">••••••••</span>
+              </div>
+              <svg class="icon-muted" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </div>
+          </div>
+
+          <div class="session-row">
+            <span class="checkbox-label">
+              <span class="checkbox-box"><svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 6.2L4.8 9L10 3" stroke="var(--brand-on-primary)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              <span>Mantener sesión iniciada</span>
+            </span>
+            <span class="sec-chip mono">JWT · SHA-256</span>
+          </div>
+
+          <div class="btn-primary">Entrar a la Plataforma</div>
+        </div>
+
+        <div class="demo-card">
+          <div class="demo-info">
+            <span class="demo-title">Acceso Rápido Demo</span>
+            <span class="demo-sub mono">admin@demo.com · Distribuidora Los Andes S.A.S.</span>
+          </div>
+          <div class="btn-secondary-sm">Autocompletar</div>
+        </div>
+      </div>
+
+      <div class="auth-footer">
+        <span>© 2026 Vertical</span>
+        <span class="mono">Schema-per-Tenant Isolation</span>
+      </div>
+    </div>
+
+    <div class="showcase-col">
+      <div class="showcase-topbar">
+        <span class="badge-dian">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+          <span>DIAN · Factus API V2 + Factus Pay</span>
+        </span>
+        <span class="badge-mono mono">PostgreSQL 15 · Multi-Tenant</span>
+      </div>
+
+      <div class="showcase-hero">
+        <h2>Control comercial, fiscal y predictivo en una sola arquitectura.</h2>
+        <p>Unifica cotizaciones actualizables, tarifario de servicios, facturación electrónica DIAN, recaudo con Factus Pay y modelos predictivos de demanda y cierre.</p>
+      </div>
+
+      <div class="bento-grid">
+        <div class="bento-card full">
+          <div class="card-kicker">
+            <span>Trazabilidad Comercial & Fiscal</span>
+            <span class="mono" style="color: var(--text-muted); font-weight: 500;">Flujo automatizado</span>
+          </div>
+          <div class="flow-row">
+            <div class="flow-node">
+              <span class="flow-step">1 · Cotización</span>
+              <span class="flow-code mono">COT-0004</span>
+              <span class="flow-meta mono">$ 452.200 COP · Servicio</span>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node highlight">
+              <span class="flow-step">2 · Factura DIAN</span>
+              <span class="flow-code mono">SETT-0033</span>
+              <span class="flow-meta mono">$ 1.356.600 COP · CUFE OK</span>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">
+              <span class="flow-step">3 · Contabilidad</span>
+              <span class="flow-code mono">Asiento #38</span>
+              <span class="flow-meta mono">Factus Pay Activo</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bento-card">
+          <div class="card-kicker">
+            <span>Motor Predictivo IA</span>
+            <span class="ml-chip">ML Lead Scoring</span>
+          </div>
+          <div>
+            <div class="big-stat mono">94,0%</div>
+            <p class="sub-caption" style="margin-top: 6px;">Propensión de cierre calculada sobre <strong style="color: var(--text-primary);">Construcciones Modernas S.A.</strong></p>
+          </div>
+          <svg viewBox="0 0 320 56" width="100%" height="56" fill="none" aria-hidden="true">
+            <path d="M4 44 L56 38 L108 40 L160 28 L212 24 L264 14 L316 8" stroke="#7C3AED" stroke-width="2" stroke-linecap="round"/>
+            <path d="M212 24 L264 14 L316 8" stroke="#7C3AED" stroke-width="2" stroke-dasharray="4 4"/>
+            <circle cx="316" cy="8" r="4" fill="#7C3AED"/>
+          </svg>
+        </div>
+
+        <div class="bento-card">
+          <div class="card-kicker">
+              <span>Arquitectura "A la Carta"</span>
+              <span class="mono" style="color: var(--status-success-text);">8 Módulos</span>
+          </div>
+          <div>
+            <div class="big-stat mono">100% Modular</div>
+            <p class="sub-caption" style="margin-top: 6px;">Activa herramientas según tu operación de servicios o inventario físico.</p>
+          </div>
+          <div class="modules-pills">
+            <span class="mod-pill on">Cotizaciones</span>
+            <span class="mod-pill on">Facturación DIAN</span>
+            <span class="mod-pill on">Contabilidad</span>
+            <span class="mod-pill">Inventario</span>
+            <span class="mod-pill">CRM WhatsApp</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="showcase-footer">
+        <span>Vertical OS / Vertical ERP para PyMEs colombianas</span>
+        <span class="mono">WCAG 2.2 AA · Rotación JWT</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. DESKTOP DARK (1440 x 900) -->
+  <section id="board-login-desktop-dark" class="board-desktop theme-dark">
+    <div class="auth-col">
+      <div class="auth-topbar">
+        <div class="brand-lockup">
+          <svg width="30" height="30" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <path d="M4.5 9.95C4.5 9.28726 5.03726 8.75 5.7 8.75H9.3C9.96274 8.75 10.5 9.28726 10.5 9.95V21.25L4.5 15.25V9.95Z" fill="currentColor"/>
+            <path d="M13 13.95C13 13.2873 13.5373 12.75 14.2 12.75H17.8C18.4627 12.75 19 13.2873 19 13.95V23.75L16 26.75L13 23.75V13.95Z" fill="currentColor"/>
+            <path d="M21.5 6.45C21.5 5.78726 22.0373 5.25 22.7 5.25H26.3C26.9627 5.25 27.5 5.78726 27.5 6.45V15.25L21.5 21.25V6.45Z" fill="currentColor"/>
+          </svg>
+          <span class="brand-name">Vertical</span>
+        </div>
+        <div class="theme-pill">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+          <span>Tema Oscuro</span>
+        </div>
+      </div>
+
+      <div class="auth-main">
+        <div class="segmented">
+          <div class="seg-tab active">Iniciar Sesión</div>
+          <div class="seg-tab">Crear Empresa</div>
+        </div>
+
+        <div class="auth-heading">
+          <h1>Iniciar sesión en Vertical</h1>
+          <p>Accede al centro de control comercial, fiscal y predictivo de tu empresa.</p>
+        </div>
+
+        <div class="form-fields">
+          <div class="field-group">
+            <label class="field-label">Correo Electrónico</label>
+            <div class="input-box">
+              <div class="input-left">
+                <svg class="icon-muted" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+                <span>admin@demo.com</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Contraseña</label>
+            <div class="input-box">
+              <div class="input-left">
+                <svg class="icon-muted" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                <span class="mono">••••••••</span>
+              </div>
+              <svg class="icon-muted" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </div>
+          </div>
+
+          <div class="session-row">
+            <span class="checkbox-label">
+              <span class="checkbox-box"><svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 6.2L4.8 9L10 3" stroke="var(--brand-on-primary)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              <span>Mantener sesión iniciada</span>
+            </span>
+            <span class="sec-chip mono">JWT · SHA-256</span>
+          </div>
+
+          <div class="btn-primary">Entrar a la Plataforma</div>
+        </div>
+
+        <div class="demo-card">
+          <div class="demo-info">
+            <span class="demo-title">Acceso Rápido Demo</span>
+            <span class="demo-sub mono">admin@demo.com · Distribuidora Los Andes S.A.S.</span>
+          </div>
+          <div class="btn-secondary-sm">Autocompletar</div>
+        </div>
+      </div>
+
+      <div class="auth-footer">
+        <span>© 2026 Vertical</span>
+        <span class="mono">Schema-per-Tenant Isolation</span>
+      </div>
+    </div>
+
+    <div class="showcase-col">
+      <div class="showcase-topbar">
+        <span class="badge-dian">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+          <span>DIAN · Factus API V2 + Factus Pay</span>
+        </span>
+        <span class="badge-mono mono">PostgreSQL 15 · Multi-Tenant</span>
+      </div>
+
+      <div class="showcase-hero">
+        <h2>Control comercial, fiscal y predictivo en una sola arquitectura.</h2>
+        <p>Unifica cotizaciones actualizables, tarifario de servicios, facturación electrónica DIAN, recaudo con Factus Pay y modelos predictivos de demanda y cierre.</p>
+      </div>
+
+      <div class="bento-grid">
+        <div class="bento-card full">
+          <div class="card-kicker">
+            <span>Trazabilidad Comercial & Fiscal</span>
+            <span class="mono" style="color: var(--text-muted); font-weight: 500;">Flujo automatizado</span>
+          </div>
+          <div class="flow-row">
+            <div class="flow-node">
+              <span class="flow-step">1 · Cotización</span>
+              <span class="flow-code mono">COT-0004</span>
+              <span class="flow-meta mono">$ 452.200 COP · Servicio</span>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node highlight">
+              <span class="flow-step">2 · Factura DIAN</span>
+              <span class="flow-code mono">SETT-0033</span>
+              <span class="flow-meta mono">$ 1.356.600 COP · CUFE OK</span>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">
+              <span class="flow-step">3 · Contabilidad</span>
+              <span class="flow-code mono">Asiento #38</span>
+              <span class="flow-meta mono">Factus Pay Activo</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bento-card">
+          <div class="card-kicker">
+            <span>Motor Predictivo IA</span>
+            <span class="ml-chip">ML Lead Scoring</span>
+          </div>
+          <div>
+            <div class="big-stat mono">94,0%</div>
+            <p class="sub-caption" style="margin-top: 6px;">Propensión de cierre calculada sobre <strong style="color: var(--text-primary);">Construcciones Modernas S.A.</strong></p>
+          </div>
+          <svg viewBox="0 0 320 56" width="100%" height="56" fill="none" aria-hidden="true">
+            <path d="M4 44 L56 38 L108 40 L160 28 L212 24 L264 14 L316 8" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round"/>
+            <path d="M212 24 L264 14 L316 8" stroke="#8B5CF6" stroke-width="2" stroke-dasharray="4 4"/>
+            <circle cx="316" cy="8" r="4" fill="#8B5CF6"/>
+          </svg>
+        </div>
+
+        <div class="bento-card">
+          <div class="card-kicker">
+              <span>Arquitectura "A la Carta"</span>
+              <span class="mono" style="color: var(--status-success-text);">8 Módulos</span>
+          </div>
+          <div>
+            <div class="big-stat mono">100% Modular</div>
+            <p class="sub-caption" style="margin-top: 6px;">Activa herramientas según tu operación de servicios o inventario físico.</p>
+          </div>
+          <div class="modules-pills">
+            <span class="mod-pill on">Cotizaciones</span>
+            <span class="mod-pill on">Facturación DIAN</span>
+            <span class="mod-pill on">Contabilidad</span>
+            <span class="mod-pill">Inventario</span>
+            <span class="mod-pill">CRM WhatsApp</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="showcase-footer">
+        <span>Vertical OS / Vertical ERP para PyMEs colombianas</span>
+        <span class="mono">WCAG 2.2 AA · Rotación JWT</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. MOBILE LIGHT (390 x 844) -->
+  <section id="board-login-mobile-light" class="board-mobile">
+    <div class="auth-topbar">
+      <div class="brand-lockup">
+        <svg width="26" height="26" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <path d="M4.5 9.95C4.5 9.28726 5.03726 8.75 5.7 8.75H9.3C9.96274 8.75 10.5 9.28726 10.5 9.95V21.25L4.5 15.25V9.95Z" fill="currentColor"/>
+          <path d="M13 13.95C13 13.2873 13.5373 12.75 14.2 12.75H17.8C18.4627 12.75 19 13.2873 19 13.95V23.75L16 26.75L13 23.75V13.95Z" fill="currentColor"/>
+          <path d="M21.5 6.45C21.5 5.78726 22.0373 5.25 22.7 5.25H26.3C26.9627 5.25 27.5 5.78726 27.5 6.45V15.25L21.5 21.25V6.45Z" fill="currentColor"/>
+        </svg>
+        <span class="brand-name" style="font-size: 17px;">Vertical</span>
+      </div>
+      <div class="theme-pill">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <span>Claro</span>
+      </div>
+    </div>
+
+    <div class="mobile-body">
+      <div style="display: flex; align-items: center;">
+        <span class="badge-dian" style="font-size: 11px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+          <span>DIAN · Factus API V2 + Factus Pay</span>
+        </span>
+      </div>
+
+      <div class="segmented">
+        <div class="seg-tab active">Iniciar Sesión</div>
+        <div class="seg-tab">Crear Empresa</div>
+      </div>
+
+      <div class="auth-heading">
+        <h1 style="font-size: 21px;">Iniciar sesión en Vertical</h1>
+        <p style="font-size: 13px;">Accede al panel comercial y fiscal de tu empresa.</p>
+      </div>
+
+      <div class="form-fields">
+        <div class="field-group">
+          <label class="field-label">Correo Electrónico</label>
+          <div class="input-box">
+            <div class="input-left">
+              <svg class="icon-muted" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+              <span>admin@demo.com</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Contraseña</label>
+          <div class="input-box">
+            <div class="input-left">
+              <svg class="icon-muted" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+              <span class="mono">••••••••</span>
+            </div>
+            <svg class="icon-muted" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </div>
+        </div>
+
+        <div class="session-row">
+          <span class="checkbox-label" style="font-size: 12px;">
+            <span class="checkbox-box"><svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 6.2L4.8 9L10 3" stroke="var(--brand-on-primary)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span>Mantener sesión</span>
+          </span>
+          <span class="sec-chip mono">JWT · SHA-256</span>
+        </div>
+
+        <div class="btn-primary">Entrar a la Plataforma</div>
+      </div>
+
+      <div class="demo-card">
+        <div class="demo-info">
+          <span class="demo-title">Acceso Rápido Demo</span>
+          <span class="demo-sub mono">admin@demo.com</span>
+        </div>
+        <div class="btn-secondary-sm">Autocompletar</div>
+      </div>
+    </div>
+
+    <div class="mobile-footer">
+      <span>© 2026 Vertical · Gestión empresarial PyME</span>
+      <span class="mono">Schema-per-Tenant · PostgreSQL 15</span>
+    </div>
+  </section>
+
+</body>
+</html>

@@ -1,7 +1,13 @@
 from sqlmodel import SQLModel, Field, Column
 from sqlalchemy import JSON
 from typing import Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
+
+
+def get_utc_now() -> datetime:
+    """Retorna la hora actual en UTC con timezone-aware."""
+    return datetime.now(timezone.utc)
+
 
 class MlAlert(SQLModel, table=True):
     """
@@ -15,7 +21,7 @@ class MlAlert(SQLModel, table=True):
     message: str # Frase traducida a lenguaje natural para el empresario
     data: Dict[str, Any] = Field(default={}, sa_column=Column(JSON)) # Scores numéricos, IDs, probabilidades
     is_read: bool = Field(default=False, index=True)
-    generated_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+    generated_at: datetime = Field(default_factory=get_utc_now, index=True)
 
 
 class MlModelRegistry(SQLModel, table=True):
@@ -31,4 +37,4 @@ class MlModelRegistry(SQLModel, table=True):
     file_path: str # Ruta al archivo .pkl guardado en disco
     metrics: Dict[str, Any] = Field(default={}, sa_column=Column(JSON)) # e.g. {"roc_auc": 0.89, "rmse": 4.12}
     status: str = Field(default="active", index=True) # 'active' | 'archived'
-    trained_at: datetime = Field(default_factory=datetime.utcnow)
+    trained_at: datetime = Field(default_factory=get_utc_now)

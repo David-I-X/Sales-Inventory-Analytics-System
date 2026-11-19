@@ -1,7 +1,13 @@
 from typing import Optional, List, Dict, Any
 from sqlmodel import SQLModel, Field, Relationship, Column
 from sqlalchemy import JSON
-from datetime import datetime
+from datetime import datetime, timezone
+
+
+def get_utc_now() -> datetime:
+    """Retorna la hora actual en UTC con timezone-aware."""
+    return datetime.now(timezone.utc)
+
 
 class Tenant(SQLModel, table=True):
     __tablename__ = "tenants"
@@ -22,7 +28,7 @@ class Tenant(SQLModel, table=True):
         sa_column=Column(JSON)
     )
     is_active: bool = Field(default=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=get_utc_now)
     
     api_keys: List["ApiKey"] = Relationship(back_populates="tenant")
 
@@ -35,6 +41,6 @@ class ApiKey(SQLModel, table=True):
     key: str = Field(unique=True, index=True)
     label: str = Field(default="default")
     is_active: bool = Field(default=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=get_utc_now)
     
     tenant: Tenant = Relationship(back_populates="api_keys")

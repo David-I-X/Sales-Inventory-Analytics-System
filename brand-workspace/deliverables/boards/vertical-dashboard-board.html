@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vertical — Design Board (Desktop 1440×900 & Mobile 390×844)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-canvas: #FFFFFF;
+      --bg-surface: #FAFAFA;
+      --bg-subtle: #F4F4F5;
+      --border-subtle: #E4E4E7;
+      --border-strong: #D4D4D8;
+      --text-primary: #09090B;
+      --text-secondary: #52525B;
+      --text-muted: #63636E;
+      --brand-primary: #059669;
+      --brand-solid: #047857;
+      --brand-on-primary: #FFFFFF;
+      --brand-hover: #065F46;
+      --brand-subtle: #ECFDF5;
+      --brand-border: #A7F3D0;
+      --ml-accent: #7C3AED;
+      --ml-text: #6D28D9;
+      --ml-subtle: #F5F3FF;
+      --ml-border: #DDD6FE;
+      --status-success-text: #065F46;
+      --status-success-bg: #ECFDF5;
+      --status-warning-text: #92400E;
+      --status-warning-bg: #FFFBEB;
+      --status-warning-border: #FDE68A;
+      --status-danger-text: #991B1B;
+      --status-danger-bg: #FEF2F2;
+      --status-danger-border: #FECACA;
+      --font-sans: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'Geist Mono', 'JetBrains Mono', monospace;
+    }
+
+    .theme-dark {
+      --bg-canvas: #09090B;
+      --bg-surface: #111114;
+      --bg-subtle: #18181B;
+      --border-subtle: #27272A;
+      --border-strong: #3F3F46;
+      --text-primary: #FAFAFA;
+      --text-secondary: #A1A1AA;
+      --text-muted: #8E8E98;
+      --brand-primary: #10B981;
+      --brand-solid: #10B981;
+      --brand-on-primary: #09090B;
+      --brand-hover: #34D399;
+      --brand-subtle: rgba(16, 185, 129, 0.12);
+      --brand-border: rgba(16, 185, 129, 0.28);
+      --ml-accent: #8B5CF6;
+      --ml-text: #C4B5FD;
+      --ml-subtle: rgba(139, 92, 246, 0.12);
+      --ml-border: rgba(139, 92, 246, 0.28);
+      --status-success-text: #34D399;
+      --status-success-bg: rgba(16, 185, 129, 0.12);
+      --status-warning-text: #FCD34D;
+      --status-warning-bg: rgba(245, 158, 11, 0.12);
+      --status-warning-border: rgba(245, 158, 11, 0.28);
+      --status-danger-text: #FCA5A5;
+      --status-danger-bg: rgba(239, 68, 68, 0.12);
+      --status-danger-border: rgba(239, 68, 68, 0.28);
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: #E4E4E7;
+      color: #09090B;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .mono {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Frame containers for exact capture */
+    .board-desktop {
+      width: 1440px;
+      height: 900px;
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .board-mobile {
+      width: 390px;
+      height: 844px;
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      flex-shrink: 0;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 16px 12px;
+    }
+
+    .brand-header {
+      padding: 4px 8px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: 12px;
+    }
+
+    .brand-lockup {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand-left {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .brand-name {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--text-primary);
+    }
+
+    .tenant-pill {
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tenant-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--brand-primary);
+    }
+
+    .nav-group-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      padding: 8px 10px 6px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 2px;
+    }
+
+    .nav-item.active {
+      background: var(--brand-subtle);
+      color: var(--brand-solid);
+      border: 1px solid var(--brand-border);
+      font-weight: 600;
+    }
+
+    .theme-dark .nav-item.active {
+      color: var(--brand-hover);
+    }
+
+    .nav-item svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    .sidebar-footer {
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    /* Main Content */
+    .main-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-canvas);
+      min-width: 0;
+    }
+
+    .topbar {
+      height: 56px;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-canvas);
+      flex-shrink: 0;
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .breadcrumb strong {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .ml-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      background: var(--ml-subtle);
+      color: var(--ml-text);
+      border: 1px solid var(--ml-border);
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      background: var(--brand-solid);
+      color: var(--brand-on-primary);
+      border: 1px solid transparent;
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 500;
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      border: 1px solid var(--border-strong);
+    }
+
+    .content {
+      padding: 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+    }
+
+    .page-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      color: var(--text-primary);
+      line-height: 1.2;
+    }
+
+    .page-subtitle {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    .period-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    /* KPI Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 16px 18px;
+    }
+
+    .card-white {
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+    }
+
+    .kpi-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .kpi-value {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      margin-top: 8px;
+      line-height: 1.2;
+    }
+
+    .kpi-meta {
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+
+    .delta-up {
+      color: var(--status-success-text);
+      font-weight: 600;
+    }
+
+    /* Subtle DIAN Badge */
+    .badge-dian {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 500;
+      background: var(--status-success-bg);
+      color: var(--status-success-text);
+      border: 1px solid var(--brand-border);
+    }
+
+    .badge-warning {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 500;
+      background: var(--status-warning-bg);
+      color: var(--status-warning-text);
+      border: 1px solid var(--status-warning-border);
+    }
+
+    .badge-ml {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--ml-subtle);
+      color: var(--ml-text);
+      border: 1px solid var(--ml-border);
+    }
+
+    .badge-neutral {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--bg-subtle);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    /* Middle Analytical Grid */
+    .mid-grid {
+      display: grid;
+      grid-template-columns: 7fr 5fr;
+      gap: 14px;
+    }
+
+    .panel-head {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .panel-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .panel-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 11.5px;
+      color: var(--text-secondary);
+    }
+
+    .legend-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      margin-right: 5px;
+    }
+
+    /* Lead list */
+    .lead-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 18px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .lead-row:last-child { border-bottom: none; }
+
+    .lead-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .lead-reason {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .prob-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .prob-track {
+      width: 64px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--bg-subtle);
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+    }
+    .prob-fill {
+      height: 100%;
+      background: var(--ml-accent);
+      border-radius: 999px;
+    }
+
+    /* Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      padding: 9px 18px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    td {
+      padding: 10px 18px;
+      font-size: 13px;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    tr:last-child td { border-bottom: none; }
+    .text-right { text-align: right; }
+
+    /* Mobile Specific */
+    .mobile-topbar {
+      height: 54px;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .mobile-content {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      flex: 1;
+      overflow: hidden;
+    }
+    .mobile-kpi-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .mobile-kpi-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .mobile-bottom-nav {
+      height: 58px;
+      border-top: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      align-items: center;
+      padding: 0 8px;
+      flex-shrink: 0;
+    }
+    .mobile-tab {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      font-size: 10.5px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .mobile-tab.active {
+      color: var(--brand-solid);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- BOARD 1: DESKTOP LIGHT MODE (1440 x 900) -->
+  <section id="board-desktop-light" class="board-desktop">
+    <aside class="sidebar">
+      <div>
+        <div class="brand-header">
+          <div class="brand-lockup">
+            <div class="brand-left">
+              <svg width="26" height="26" viewBox="0 0 32 32" fill="none">
+                <path d="M4.5 9.95C4.5 9.28726 5.03726 8.75 5.7 8.75H9.3C9.96274 8.75 10.5 9.28726 10.5 9.95V21.25L4.5 15.25V9.95Z" fill="#09090B"/>
+                <path d="M13 13.95C13 13.2873 13.5373 12.75 14.2 12.75H17.8C18.4627 12.75 19 13.2873 19 13.95V23.75L16 26.75L13 23.75V13.95Z" fill="#09090B"/>
+                <path d="M21.5 6.45C21.5 5.78726 22.0373 5.25 22.7 5.25H26.3C26.9627 5.25 27.5 5.78726 27.5 6.45V15.25L21.5 21.25V6.45Z" fill="#09090B"/>
+              </svg>
+              <span class="brand-name">Vertical</span>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="color: var(--text-muted)"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="9" y1="4" x2="9" y2="20"/></svg>
+          </div>
+          <div class="tenant-pill">
+            <span class="tenant-dot"></span>
+            <span>Distribuidora Andina S.A.S.</span>
+          </div>
+        </div>
+
+        <div class="nav-group-label">Operación</div>
+        <div class="nav-item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <span>Dashboard</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>
+          <span>Contactos CRM</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <span>Facturas DIAN</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          <span>Inventario</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          <span>Compras</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <span>Contabilidad</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color: var(--ml-accent)"><path d="M12 2a4 4 0 0 1 4 4c0 1.1-.45 2.1-1.17 2.83L12 12l-2.83-3.17A4 4 0 0 1 12 2z"/><path d="M12 12v10"/><path d="M5 17l7-5 7 5"/></svg>
+          <span>Motor IA / ML</span>
+        </div>
+
+        <div class="nav-group-label" style="margin-top: 10px;">Sistema</div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+          <span>Módulos</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/></svg>
+          <span>Usuarios y Roles</span>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>
+          <span>Tema Claro</span>
+        </div>
+        <div class="nav-item" style="justify-content: space-between;">
+          <span style="display:flex;align-items:center;gap:10px;">
+            <span style="width:20px;height:20px;border-radius:6px;background:var(--bg-subtle);border:1px solid var(--border-strong);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text-primary)">DG</span>
+            <span>David Gómez</span>
+          </span>
+          <span class="mono" style="font-size:10px;color:var(--text-muted)">Admin</span>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-area">
+      <header class="topbar">
+        <div class="breadcrumb">
+          <span>Vertical</span>
+          <span>/</span>
+          <strong>Dashboard Ejecutivo</strong>
+        </div>
+        <div class="topbar-right">
+          <div class="ml-chip">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 5.8h6.1l-4.9 3.6 1.9 5.8-5-3.6-5 3.6 1.9-5.8-4.9-3.6h6.1z"/></svg>
+            <span>Lead Top: <strong>Ferretería El Roble</strong></span>
+            <span class="mono" style="font-weight:600">94%</span>
+          </div>
+          <button class="btn-secondary">
+            <span>Exportar reporte</span>
+          </button>
+          <button class="btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Nueva Factura DIAN</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="content">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Dashboard Ejecutivo</h1>
+            <p class="page-subtitle">Visibilidad operativa de facturación electrónica DIAN, bodega y proyecciones de demanda.</p>
+          </div>
+          <div class="period-pill">
+            <span>Periodo:</span>
+            <strong style="color:var(--text-primary)">Noviembre 2026</strong>
+          </div>
+        </div>
+
+        <!-- KPI Strip -->
+        <section class="kpi-grid">
+          <div class="card">
+            <div class="kpi-label">
+              <span>Ingresos Facturados</span>
+              <span class="badge-dian">DIAN al día</span>
+            </div>
+            <div class="kpi-value mono">$ 48.620.000</div>
+            <div class="kpi-meta">
+              <span class="delta-up mono">+14,2%</span>
+              <span>vs. mes anterior</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="kpi-label">
+              <span>Gastos Operativos</span>
+            </div>
+            <div class="kpi-value mono">$ 29.180.000</div>
+            <div class="kpi-meta">
+              <span class="mono" style="color:var(--text-secondary)">18</span>
+              <span>compras a proveedores</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="kpi-label">
+              <span>Utilidad Neta</span>
+              <span class="badge-neutral mono">Margen 40,0%</span>
+            </div>
+            <div class="kpi-value mono">$ 19.440.000</div>
+            <div class="kpi-meta">
+              <span class="delta-up mono">+$ 2.410.000</span>
+              <span>flujo positivo</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="kpi-label">
+              <span>Valor en Bodega</span>
+              <span class="badge-warning">3 stock bajo</span>
+            </div>
+            <div class="kpi-value mono">$ 84.350.000</div>
+            <div class="kpi-meta">
+              <span class="mono" style="color:var(--text-primary);font-weight:600">312 SKUs</span>
+              <span>· 4.890 unidades</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Mid Analytical Row -->
+        <section class="mid-grid">
+          <!-- Chart Card -->
+          <div class="card-white">
+            <div class="panel-head">
+              <div>
+                <div class="panel-title">Ingresos Históricos vs. Proyección ML</div>
+                <div class="panel-sub">Serie real de ventas COP frente a modelo predictivo a 30 días</div>
+              </div>
+              <div class="legend">
+                <span><span class="legend-dot" style="background:#09090B"></span>Histórico real</span>
+                <span><span class="legend-dot" style="background:#7C3AED"></span>Proyección ML (+16,8%)</span>
+              </div>
+            </div>
+            <div style="padding: 16px 18px 12px;">
+              <svg viewBox="0 0 680 185" width="100%" height="185" fill="none">
+                <!-- Gridlines -->
+                <line x1="48" y1="20" x2="665" y2="20" stroke="#E4E4E7" stroke-dasharray="3 3"/>
+                <line x1="48" y1="60" x2="665" y2="60" stroke="#E4E4E7" stroke-dasharray="3 3"/>
+                <line x1="48" y1="100" x2="665" y2="100" stroke="#E4E4E7" stroke-dasharray="3 3"/>
+                <line x1="48" y1="140" x2="665" y2="140" stroke="#E4E4E7"/>
+                <!-- Y labels -->
+                <text x="0" y="24" fill="#63636E" font-family="Geist Mono, monospace" font-size="10.5">$60M</text>
+                <text x="0" y="64" fill="#63636E" font-family="Geist Mono, monospace" font-size="10.5">$45M</text>
+                <text x="0" y="104" fill="#63636E" font-family="Geist Mono, monospace" font-size="10.5">$30M</text>
+                <text x="0" y="144" fill="#63636E" font-family="Geist Mono, monospace" font-size="10.5">$15M</text>
+                <!-- Confidence Band ML -->
+                <path d="M445 58 L520 42 L595 31 L660 18 L660 44 L595 54 L520 62 L445 58 Z" fill="rgba(124, 58, 237, 0.10)"/>
+                <!-- Historical Line -->
+                <path d="M55 118 L133 106 L211 112 L289 88 L367 74 L445 58" stroke="#09090B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                <!-- ML Forecast Line -->
+                <path d="M445 58 L520 52 L595 42 L660 30" stroke="#7C3AED" stroke-width="2.2" stroke-dasharray="5 4" stroke-linecap="round"/>
+                <!-- Nodes -->
+                <circle cx="445" cy="58" r="4" fill="#09090B" stroke="#FFFFFF" stroke-width="1.5"/>
+                <circle cx="520" cy="52" r="3.5" fill="#7C3AED"/>
+                <circle cx="595" cy="42" r="3.5" fill="#7C3AED"/>
+                <circle cx="660" cy="30" r="4.5" fill="#7C3AED" stroke="#FFFFFF" stroke-width="1.5"/>
+                <!-- Forecast annotation -->
+                <rect x="572" y="8" width="88" height="20" rx="5" fill="#F5F3FF" stroke="#DDD6FE"/>
+                <text x="616" y="21.5" text-anchor="middle" fill="#6D28D9" font-family="Geist Mono, monospace" font-size="10.5" font-weight="600">$ 56.8M est.</text>
+                <!-- X Axis -->
+                <text x="55" y="164" fill="#63636E" font-family="Geist, sans-serif" font-size="11">Jun</text>
+                <text x="133" y="164" fill="#63636E" font-family="Geist, sans-serif" font-size="11">Jul</text>
+                <text x="211" y="164" fill="#63636E" font-family="Geist, sans-serif" font-size="11">Ago</text>
+                <text x="289" y="164" fill="#63636E" font-family="Geist, sans-serif" font-size="11">Sep</text>
+                <text x="367" y="164" fill="#63636E" font-family="Geist, sans-serif" font-size="11">Oct</text>
+                <text x="440" y="164" fill="#09090B" font-weight="600" font-family="Geist, sans-serif" font-size="11">Nov</text>
+                <text x="588" y="164" fill="#6D28D9" font-weight="600" font-family="Geist, sans-serif" font-size="11">Dic (ML)</text>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Top Leads Scoring -->
+          <div class="card-white">
+            <div class="panel-head">
+              <div>
+                <div class="panel-title">Lead Scoring Predictivo</div>
+                <div class="panel-sub">Cuentas con mayor probabilidad de cierre (CRM)</div>
+              </div>
+              <span class="badge-ml">IA Activa</span>
+            </div>
+            <div>
+              <div class="lead-row">
+                <div>
+                  <div class="lead-name">Ferretería El Roble S.A.S.</div>
+                  <div class="lead-reason">2 cotizaciones abiertas · recompra cada 18 días</div>
+                </div>
+                <div class="prob-bar-wrap">
+                  <div class="prob-track"><div class="prob-fill" style="width:94%"></div></div>
+                  <span class="mono" style="font-size:12px;font-weight:600;width:34px;text-align:right">94%</span>
+                </div>
+              </div>
+              <div class="lead-row">
+                <div>
+                  <div class="lead-name">Suministros del Valle Ltda.</div>
+                  <div class="lead-reason">Ticket promedio +22% en último trimestre</div>
+                </div>
+                <div class="prob-bar-wrap">
+                  <div class="prob-track"><div class="prob-fill" style="width:88%"></div></div>
+                  <span class="mono" style="font-size:12px;font-weight:600;width:34px;text-align:right">88%</span>
+                </div>
+              </div>
+              <div class="lead-row">
+                <div>
+                  <div class="lead-name">Técnicos Unidos Bogotá</div>
+                  <div class="lead-reason">Alta demanda de repuestos línea industrial</div>
+                </div>
+                <div class="prob-bar-wrap">
+                  <div class="prob-track"><div class="prob-fill" style="width:81%"></div></div>
+                  <span class="mono" style="font-size:12px;font-weight:600;width:34px;text-align:right">81%</span>
+                </div>
+              </div>
+              <div class="lead-row">
+                <div>
+                  <div class="lead-name">Comercializadora Norte</div>
+                  <div class="lead-reason">Solicitó lista de precios mayorista</div>
+                </div>
+                <div class="prob-bar-wrap">
+                  <div class="prob-track"><div class="prob-fill" style="width:74%"></div></div>
+                  <span class="mono" style="font-size:12px;font-weight:600;width:34px;text-align:right">74%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bottom DIAN Invoices Table -->
+        <section class="card-white">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Últimas Facturas Electrónicas (DIAN / Factus V2)</div>
+              <div class="panel-sub">Validación en tiempo real ante la DIAN sin fricción operativa</div>
+            </div>
+            <button class="btn-secondary">Ver todas (142)</button>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>N° Factura</th>
+                <th>Cliente / NIT</th>
+                <th>CUFE</th>
+                <th>Fecha</th>
+                <th>Estado DIAN</th>
+                <th class="text-right">Total COP</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono" style="font-weight:600">FE-1048</td>
+                <td>Ferretería El Roble S.A.S. <span class="mono" style="font-size:11.5px;color:var(--text-muted)">· 900.412.881-3</span></td>
+                <td class="mono" style="font-size:12px;color:var(--text-muted)">a8f4c19e...72b1</td>
+                <td class="mono" style="font-size:12px;color:var(--text-secondary)">12/11/2026</td>
+                <td><span class="badge-dian">✓ Validada DIAN</span></td>
+                <td class="text-right mono" style="font-weight:600">$ 4.850.000</td>
+              </tr>
+              <tr>
+                <td class="mono" style="font-weight:600">FE-1047</td>
+                <td>Inversiones Antioquia S.A. <span class="mono" style="font-size:11.5px;color:var(--text-muted)">· 890.903.112-8</span></td>
+                <td class="mono" style="font-size:12px;color:var(--text-muted)">3d91b04a...19c4</td>
+                <td class="mono" style="font-size:12px;color:var(--text-secondary)">12/11/2026</td>
+                <td><span class="badge-dian">✓ Validada DIAN</span></td>
+                <td class="text-right mono" style="font-weight:600">$ 11.240.000</td>
+              </tr>
+              <tr>
+                <td class="mono" style="font-weight:600">FE-1046</td>
+                <td>Servitécnica Caribe Ltda. <span class="mono" style="font-size:11.5px;color:var(--text-muted)">· 901.184.550-1</span></td>
+                <td class="mono" style="font-size:12px;color:var(--text-muted)">e51a772c...90f2</td>
+                <td class="mono" style="font-size:12px;color:var(--text-secondary)">11/11/2026</td>
+                <td><span class="badge-warning">◷ Pendiente firma</span></td>
+                <td class="text-right mono" style="font-weight:600">$ 2.190.000</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </main>
+    </div>
+  </section>
+
+  <!-- BOARD 2: DESKTOP DARK MODE (1440 x 900) -->
+  <section id="board-desktop-dark" class="board-desktop theme-dark" style="margin-top: 40px;">
+    <aside class="sidebar">
+      <div>
+        <div class="brand-header">
+          <div class="brand-lockup">
+            <div class="brand-left">
+              <svg width="26" height="26" viewBox="0 0 32 32" fill="none">
+                <path d="M4.5 9.95C4.5 9.28726 5.03726 8.75 5.7 8.75H9.3C9.96274 8.75 10.5 9.28726 10.5 9.95V21.25L4.5 15.25V9.95Z" fill="#FAFAFA"/>
+                <path d="M13 13.95C13 13.2873 13.5373 12.75 14.2 12.75H17.8C18.4627 12.75 19 13.2873 19 13.95V23.75L16 26.75L13 23.75V13.95Z" fill="#FAFAFA"/>
+                <path d="M21.5 6.45C21.5 5.78726 22.0373 5.25 22.7 5.25H26.3C26.9627 5.25 27.5 5.78726 27.5 6.45V15.25L21.5 21.25V6.45Z" fill="#FAFAFA"/>
+              </svg>
+              <span class="brand-name">Vertical</span>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="color: var(--text-muted)"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="9" y1="4" x2="9" y2="20"/></svg>
+          </div>
+          <div class="tenant-pill">
+            <span class="tenant-dot"></span>
+            <span>Distribuidora Andina S.A.S.</span>
+          </div>
+        </div>
+
+        <div class="nav-group-label">Operación</div>
+        <div class="nav-item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <span>Dashboard</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          <span>Contactos CRM</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span>Facturas DIAN</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          <span>Inventario</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          <span>Compras</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <span>Contabilidad</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color: var(--ml-accent)"><path d="M12 2a4 4 0 0 1 4 4c0 1.1-.45 2.1-1.17 2.83L12 12l-2.83-3.17A4 4 0 0 1 12 2z"/><path d="M12 12v10"/></svg>
+          <span>Motor IA / ML</span>
+        </div>
+
+        <div class="nav-group-label" style="margin-top: 10px;">Sistema</div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+          <span>Módulos</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/></svg>
+          <span>Usuarios y Roles</span>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <span>Tema Oscuro</span>
+        </div>
+        <div class="nav-item" style="justify-content: space-between;">
+          <span style="display:flex;align-items:center;gap:10px;">
+            <span style="width:20px;height:20px;border-radius:6px;background:var(--bg-subtle);border:1px solid var(--border-strong);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text-primary)">DG</span>
+            <span>David Gómez</span>
+          </span>
+          <span class="mono" style="font-size:10px;color:var(--text-muted)">Admin</span>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-area">
+      <header class="topbar">
+        <div class="breadcrumb">
+          <span>Vertical</span>
+          <span>/</span>
+          <strong>Dashboard Ejecutivo</strong>
+        </div>
+        <div class="topbar-right">
+          <div class="ml-chip">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 5.8h6.1l-4.9 3.6 1.9 5.8-5-3.6-5 3.6 1.9-5.8-4.9-3.6h6.1z"/></svg>
+            <span>Lead Top: <strong>Ferretería El Roble</strong></span>
+            <span class="mono" style="font-weight:600">94%</span>
+          </div>
+          <button class="btn-secondary">
+            <span>Exportar reporte</span>
+          </button>
+          <button class="btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Nueva Factura DIAN</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="content">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Dashboard Ejecutivo</h1>
+            <p class="page-subtitle">Visibilidad operativa de facturación electrónica DIAN, bodega y proyecciones de demanda.</p>
+          </div>
+          <div class="period-pill">
+            <span>Periodo:</span>
+            <strong style="color:var(--text-primary)">Noviembre 2026</strong>
+          </div>
+        </div>
+
+        <section class="kpi-grid">
+          <div class="card">
+            <div class="kpi-label">
+              <span>Ingresos Facturados</span>
+              <span class="badge-dian">DIAN al día</span>
+            </div>
+            <div class="kpi-value mono">$ 48.620.000</div>
+            <div class="kpi-meta">
+              <span class="delta-up mono">+14,2%</span>
+              <span>vs. mes anterior</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="kpi-label">
+              <span>Gastos Operativos</span>
+            </div>
+            <div class="kpi-value mono">$ 29.180.000</div>
+            <div class="kpi-meta">
+              <span class="mono" style="color:var(--text-secondary)">18</span>
+              <span>compras a proveedores</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="kpi-label">
+              <span>Utilidad Neta</span>
+              <span class="badge-neutral mono">Margen 40,0%</span>
+            </div>
+            <div class="kpi-value mono">$ 19.440.000</div>
+            <div class="kpi-meta">
+              <span class="delta-up mono">+$ 2.410.000</span>
+              <span>flujo positivo</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="kpi-label">
+              <span>Valor en Bodega</span>
+              <span class="badge-warning">3 stock bajo</span>
+            </div>
+            <div class="kpi-value mono">$ 84.350.000</div>
+            <div class="kpi-meta">
+              <span class="mono" style="color:var(--text-primary);font-weight:600">312 SKUs</span>
+              <span>· 4.890 unidades</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="mid-grid">
+          <div class="card-white">
+            <div class="panel-head">
+              <div>
+                <div class="panel-title">Ingresos Históricos vs. Proyección ML</div>
+                <div class="panel-sub">Serie real de ventas COP frente a modelo predictivo a 30 días</div>
+              </div>
+              <div class="legend">
+                <span><span class="legend-dot" style="background:#FAFAFA"></span>Histórico real</span>
+                <span><span class="legend-dot" style="background:#8B5CF6"></span>Proyección ML (+16,8%)</span>
+              </div>
+            </div>
+            <div style="padding: 16px 18px 12px;">
+              <svg viewBox="0 0 680 185" width="100%" height="185" fill="none">
+                <line x1="48" y1="20" x2="665" y2="20" stroke="#27272A" stroke-dasharray="3 3"/>
+                <line x1="48" y1="60" x2="665" y2="60" stroke="#27272A" stroke-dasharray="3 3"/>
+                <line x1="48" y1="100" x2="665" y2="100" stroke="#27272A" stroke-dasharray="3 3"/>
+                <line x1="48" y1="140" x2="665" y2="140" stroke="#27272A"/>
+                <text x="0" y="24" fill="#8E8E98" font-family="Geist Mono, monospace" font-size="10.5">$60M</text>
+                <text x="0" y="64" fill="#8E8E98" font-family="Geist Mono, monospace" font-size="10.5">$45M</text>
+                <text x="0" y="104" fill="#8E8E98" font-family="Geist Mono, monospace" font-size="10.5">$30M</text>
+                <text x="0" y="144" fill="#8E8E98" font-family="Geist Mono, monospace" font-size="10.5">$15M</text>
+                <path d="M445 58 L520 42 L595 31 L660 18 L660 44 L595 54 L520 62 L445 58 Z" fill="rgba(139, 92, 246, 0.14)"/>
+                <path d="M55 118 L133 106 L211 112 L289 88 L367 74 L445 58" stroke="#FAFAFA" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M445 58 L520 52 L595 42 L660 30" stroke="#8B5CF6" stroke-width="2.2" stroke-dasharray="5 4" stroke-linecap="round"/>
+                <circle cx="445" cy="58" r="4" fill="#FAFAFA" stroke="#09090B" stroke-width="1.5"/>
+                <circle cx="520" cy="52" r="3.5" fill="#8B5CF6"/>
+                <circle cx="595" cy="42" r="3.5" fill="#8B5CF6"/>
+                <circle cx="660" cy="30" r="4.5" fill="#C4B5FD" stroke="#09090B" stroke-width="1.5"/>
+                <rect x="572" y="8" width="88" height="20" rx="5" fill="#1E182D" stroke="rgba(139, 92, 246, 0.35)"/>
+                <text x="616" y="21.5" text-anchor="middle" fill="#C4B5FD" font-family="Geist Mono, monospace" font-size="10.5" font-weight="600">$ 56.8M est.</text>
+                <text x="55" y="164" fill="#8E8E98" font-family="Geist, sans-serif" font-size="11">Jun</text>
+                <text x="133" y="164" fill="#8E8E98" font-family="Geist, sans-serif" font-size="11">Jul</text>
+                <text x="211" y="164" fill="#8E8E98" font-family="Geist, sans-serif" font-size="11">Ago</text>
+                <text x="289" y="164" fill="#8E8E98" font-family="Geist, sans-serif" font-size="11">Sep</text>
+                <text x="367" y="164" fill="#8E8E98" font-family="Geist, sans-serif" font-size="11">Oct</text>
+                <text x="440" y="164" fill="#FAFAFA" font-weight="600" font-family="Geist, sans-serif" font-size="11">Nov</text>
+                <text x="588" y="164" fill="#C4B5FD" font-weight="600" font-family="Geist, sans-serif" font-size="11">Dic (ML)</text>
+              </svg>
+            </div>
+          </div>
+
+          <div class="card-white">
+            <div class="panel-head">
+              <div>
+                <div class="panel-title">Lead Scoring Predictivo</div>
+                <div class="panel-sub">Cuentas con mayor probabilidad de cierre (CRM)</div>
+              </div>
+              <span class="badge-ml">IA Activa</span>
+            </div>
+            <div>
+              <div class="lead-row">
+                <div>
+                  <div class="lead-name">Ferretería El Roble S.A.S.</div>
+                  <div class="lead-reason">2 cotizaciones abiertas · recompra cada 18 días</div>
+                </div>
+                <div class="prob-bar-wrap">
+                  <div class="prob-track"><div class="prob-fill" style="width:94%"></div></div>
+                  <span class="mono" style="font-size:12px;font-weight:600;width:34px;text-align:right">94%</span>
+                </div>
+              </div>
+              <div class="lead-row">
+                <div>
+                  <div class="lead-name">Suministros del Valle Ltda.</div>
+                  <div class="lead-reason">Ticket promedio +22% en último trimestre</div>
+                </div>
+                <div class="prob-bar-wrap">
+                  <div class="prob-track"><div class="prob-fill" style="width:88%"></div></div>
+                  <span class="mono" style="font-size:12px;font-weight:600;width:34px;text-align:right">88%</span>
+                </div>
+              </div>
+              <div class="lead-row">
+                <div>
+                  <div class="lead-name">Técnicos Unidos Bogotá</div>
+                  <div class="lead-reason">Alta demanda de repuestos línea industrial</div>
+                </div>
+                <div class="prob-bar-wrap">
+                  <div class="prob-track"><div class="prob-fill" style="width:81%"></div></div>
+                  <span class="mono" style="font-size:12px;font-weight:600;width:34px;text-align:right">81%</span>
+                </div>
+              </div>
+              <div class="lead-row">
+                <div>
+                  <div class="lead-name">Comercializadora Norte</div>
+                  <div class="lead-reason">Solicitó lista de precios mayorista</div>
+                </div>
+                <div class="prob-bar-wrap">
+                  <div class="prob-track"><div class="prob-fill" style="width:74%"></div></div>
+                  <span class="mono" style="font-size:12px;font-weight:600;width:34px;text-align:right">74%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card-white">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Últimas Facturas Electrónicas (DIAN / Factus V2)</div>
+              <div class="panel-sub">Validación en tiempo real ante la DIAN sin fricción operativa</div>
+            </div>
+            <button class="btn-secondary">Ver todas (142)</button>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>N° Factura</th>
+                <th>Cliente / NIT</th>
+                <th>CUFE</th>
+                <th>Fecha</th>
+                <th>Estado DIAN</th>
+                <th class="text-right">Total COP</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono" style="font-weight:600">FE-1048</td>
+                <td>Ferretería El Roble S.A.S. <span class="mono" style="font-size:11.5px;color:var(--text-muted)">· 900.412.881-3</span></td>
+                <td class="mono" style="font-size:12px;color:var(--text-muted)">a8f4c19e...72b1</td>
+                <td class="mono" style="font-size:12px;color:var(--text-secondary)">12/11/2026</td>
+                <td><span class="badge-dian">✓ Validada DIAN</span></td>
+                <td class="text-right mono" style="font-weight:600">$ 4.850.000</td>
+              </tr>
+              <tr>
+                <td class="mono" style="font-weight:600">FE-1047</td>
+                <td>Inversiones Antioquia S.A. <span class="mono" style="font-size:11.5px;color:var(--text-muted)">· 890.903.112-8</span></td>
+                <td class="mono" style="font-size:12px;color:var(--text-muted)">3d91b04a...19c4</td>
+                <td class="mono" style="font-size:12px;color:var(--text-secondary)">12/11/2026</td>
+                <td><span class="badge-dian">✓ Validada DIAN</span></td>
+                <td class="text-right mono" style="font-weight:600">$ 11.240.000</td>
+              </tr>
+              <tr>
+                <td class="mono" style="font-weight:600">FE-1046</td>
+                <td>Servitécnica Caribe Ltda. <span class="mono" style="font-size:11.5px;color:var(--text-muted)">· 901.184.550-1</span></td>
+                <td class="mono" style="font-size:12px;color:var(--text-muted)">e51a772c...90f2</td>
+                <td class="mono" style="font-size:12px;color:var(--text-secondary)">11/11/2026</td>
+                <td><span class="badge-warning">◷ Pendiente firma</span></td>
+                <td class="text-right mono" style="font-weight:600">$ 2.190.000</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </main>
+    </div>
+  </section>
+
+  <!-- BOARD 3: MOBILE LIGHT MODE (390 x 844) -->
+  <section id="board-mobile-light" class="board-mobile" style="margin-top: 40px;">
+    <header class="mobile-topbar">
+      <div class="brand-left">
+        <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
+          <path d="M4.5 9.95C4.5 9.28726 5.03726 8.75 5.7 8.75H9.3C9.96274 8.75 10.5 9.28726 10.5 9.95V21.25L4.5 15.25V9.95Z" fill="#09090B"/>
+          <path d="M13 13.95C13 13.2873 13.5373 12.75 14.2 12.75H17.8C18.4627 12.75 19 13.2873 19 13.95V23.75L16 26.75L13 23.75V13.95Z" fill="#09090B"/>
+          <path d="M21.5 6.45C21.5 5.78726 22.0373 5.25 22.7 5.25H26.3C26.9627 5.25 27.5 5.78726 27.5 6.45V15.25L21.5 21.25V6.45Z" fill="#09090B"/>
+        </svg>
+        <span class="brand-name" style="font-size:15px">Vertical</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="btn-primary" style="padding:5px 10px;font-size:12px">+ Factura</button>
+      </div>
+    </header>
+
+    <main class="mobile-content">
+      <div>
+        <h1 style="font-size:18px;font-weight:700;letter-spacing:-0.025em">Dashboard Ejecutivo</h1>
+        <p style="font-size:12px;color:var(--text-secondary);margin-top:2px">Noviembre 2026 · Distribuidora Andina</p>
+      </div>
+
+      <div class="ml-chip" style="justify-content:space-between;width:100%;">
+        <span style="display:flex;align-items:center;gap:6px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 5.8h6.1l-4.9 3.6 1.9 5.8-5-3.6-5 3.6 1.9-5.8-4.9-3.6h6.1z"/></svg>
+          <span>Lead Top: <strong>Ferretería El Roble</strong></span>
+        </span>
+        <span class="mono" style="font-weight:700">94%</span>
+      </div>
+
+      <div class="mobile-kpi-grid">
+        <div class="mobile-kpi-card">
+          <div style="font-size:11px;color:var(--text-secondary)">Ingresos Mes</div>
+          <div class="mono" style="font-size:16px;font-weight:600;margin-top:4px">$ 48.6M</div>
+          <div class="delta-up mono" style="font-size:11px;margin-top:4px">+14,2%</div>
+        </div>
+        <div class="mobile-kpi-card">
+          <div style="font-size:11px;color:var(--text-secondary)">Utilidad Neta</div>
+          <div class="mono" style="font-size:16px;font-weight:600;margin-top:4px">$ 19.4M</div>
+          <div class="mono" style="font-size:11px;color:var(--text-muted);margin-top:4px">Margen 40%</div>
+        </div>
+        <div class="mobile-kpi-card">
+          <div style="font-size:11px;color:var(--text-secondary)">Valor Bodega</div>
+          <div class="mono" style="font-size:16px;font-weight:600;margin-top:4px">$ 84.3M</div>
+          <div class="mono" style="font-size:11px;color:var(--text-muted);margin-top:4px">312 SKUs</div>
+        </div>
+        <div class="mobile-kpi-card">
+          <div style="font-size:11px;color:var(--text-secondary)">Facturas DIAN</div>
+          <div class="mono" style="font-size:16px;font-weight:600;margin-top:4px">142</div>
+          <div style="margin-top:4px"><span class="badge-dian" style="font-size:10px;padding:1px 6px">✓ Factus OK</span></div>
+        </div>
+      </div>
+
+      <!-- Mobile Chart -->
+      <div class="card-white" style="padding:12px 14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-size:13px;font-weight:600">Ventas vs. Proyección ML</span>
+          <span class="badge-ml" style="font-size:10px">+16,8%</span>
+        </div>
+        <svg viewBox="0 0 330 110" width="100%" height="110" fill="none">
+          <line x1="0" y1="20" x2="330" y2="20" stroke="#E4E4E7" stroke-dasharray="3 3"/>
+          <line x1="0" y1="55" x2="330" y2="55" stroke="#E4E4E7" stroke-dasharray="3 3"/>
+          <line x1="0" y1="90" x2="330" y2="90" stroke="#E4E4E7"/>
+          <path d="M210 42 L265 28 L320 18 L320 38 L265 46 L210 42 Z" fill="rgba(124, 58, 237, 0.10)"/>
+          <path d="M10 78 L60 70 L110 74 L160 56 L210 42" stroke="#09090B" stroke-width="2" stroke-linecap="round"/>
+          <path d="M210 42 L265 36 L320 26" stroke="#7C3AED" stroke-width="2" stroke-dasharray="4 3" stroke-linecap="round"/>
+          <circle cx="210" cy="42" r="3.5" fill="#09090B"/>
+          <circle cx="320" cy="26" r="4" fill="#7C3AED"/>
+        </svg>
+      </div>
+
+      <!-- Mobile Invoices -->
+      <div class="card-white" style="overflow:hidden;">
+        <div style="padding:10px 14px;border-bottom:1px solid var(--border-subtle);display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:13px;font-weight:600">Facturas Recientes</span>
+          <span style="font-size:11.5px;color:var(--brand-solid);font-weight:600">Ver todas</span>
+        </div>
+        <div style="padding:10px 14px;border-bottom:1px solid var(--border-subtle);display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:12.5px;font-weight:600">Ferretería El Roble</div>
+            <div class="mono" style="font-size:11px;color:var(--text-muted)">FE-1048 · Hoy</div>
+          </div>
+          <div style="text-align:right">
+            <div class="mono" style="font-size:12.5px;font-weight:600">$ 4.850.000</div>
+            <span class="badge-dian" style="font-size:10px;padding:1px 6px">✓ DIAN</span>
+          </div>
+        </div>
+        <div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:12.5px;font-weight:600">Inversiones Antioquia</div>
+            <div class="mono" style="font-size:11px;color:var(--text-muted)">FE-1047 · Hoy</div>
+          </div>
+          <div style="text-align:right">
+            <div class="mono" style="font-size:12.5px;font-weight:600">$ 11.240.000</div>
+            <span class="badge-dian" style="font-size:10px;padding:1px 6px">✓ DIAN</span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <nav class="mobile-bottom-nav">
+      <div class="mobile-tab active">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span>Inicio</span>
+      </div>
+      <div class="mobile-tab">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span>DIAN</span>
+      </div>
+      <div class="mobile-tab">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        <span>Bodega</span>
+      </div>
+      <div class="mobile-tab">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2a4 4 0 0 1 4 4c0 1.1-.45 2.1-1.17 2.83L12 12l-2.83-3.17A4 4 0 0 1 12 2z"/><path d="M12 12v10"/></svg>
+        <span>IA / ML</span>
+      </div>
+    </nav>
+  </section>
+
+</body>
+</html>

@@ -1,7 +1,13 @@
 from typing import Optional, List, Dict, Any
 from sqlmodel import SQLModel, Field, Column, JSON
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
+
+
+def get_utc_now() -> datetime:
+    """Retorna la hora actual en UTC con timezone-aware."""
+    return datetime.now(timezone.utc)
+
 
 class Purchase(SQLModel, table=True):
     __tablename__ = "purchases"
@@ -19,4 +25,4 @@ class Purchase(SQLModel, table=True):
     
     notes: Optional[str] = None
     created_by: Optional[str] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+    created_at: datetime = Field(default_factory=get_utc_now, index=True)

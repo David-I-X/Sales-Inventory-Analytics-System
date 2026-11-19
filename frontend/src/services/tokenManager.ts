@@ -11,16 +11,23 @@ export const tokenManager = {
   },
 
   getRefreshToken(): string | null {
-    return localStorage.getItem(REFRESH_TOKEN_KEY);
+    return localStorage.getItem(REFRESH_TOKEN_KEY) || sessionStorage.getItem(REFRESH_TOKEN_KEY);
   },
 
-  setRefreshToken(token: string): void {
-    localStorage.setItem(REFRESH_TOKEN_KEY, token);
+  setRefreshToken(token: string, remember = true): void {
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    sessionStorage.removeItem(REFRESH_TOKEN_KEY);
+    if (remember) {
+      localStorage.setItem(REFRESH_TOKEN_KEY, token);
+    } else {
+      sessionStorage.setItem(REFRESH_TOKEN_KEY, token);
+    }
   },
 
   clearTokens(): void {
     memoryAccessToken = null;
     localStorage.removeItem(REFRESH_TOKEN_KEY);
+    sessionStorage.removeItem(REFRESH_TOKEN_KEY);
   },
 
   isAuthenticated(): boolean {

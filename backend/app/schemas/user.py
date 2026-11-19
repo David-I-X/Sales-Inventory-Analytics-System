@@ -35,6 +35,7 @@ class UserResponse(BaseModel):
     full_name: str
     role: str
     tenant_id: int
+    tenant_name: Optional[str] = None
     enabled_modules: List[str] = []
     is_active: bool
     created_at: datetime
@@ -48,6 +49,22 @@ class TokenPair(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
     expires_in: int  # Segundos hasta expiración del access token
+
+
+class CompanySignupRequest(BaseModel):
+    """Registro autoservicio de nueva empresa + primer usuario administrador."""
+    company_name: str
+    business_profile: str = "services"  # "services" | "complete"
+    full_name: str
+    email: str
+    password: str
+
+
+class CompanySignupResponse(TokenPair):
+    """Respuesta de registro de empresa con sesión autenticada inmediata."""
+    tenant_id: int
+    tenant_name: str
+    user_email: str
 
 
 class RefreshRequest(BaseModel):

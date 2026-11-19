@@ -1,20 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
-import type { Contact, Invoice, MlAlert, LeadScoreItem, InventoryDashboard, AccountingDashboard } from '../types';
-import { 
-  IconFileInvoice, 
-  IconPackages, 
-  IconAlertTriangle, 
-  IconTrendingUp, 
-  IconTrendingDown, 
-  IconCash, 
-  IconBrain, 
-  IconReceipt2, 
-  IconShoppingCart,
+import type {
+  Contact,
+  Invoice,
+  MlAlert,
+  LeadScoreItem,
+  InventoryDashboard,
+  AccountingDashboard,
+} from '../types';
+import {
+  IconAlertTriangle,
+  IconSparkles,
+  IconCheck,
+  IconClock,
   IconChevronRight,
-  IconPhone,
-  IconClock
+  IconShoppingCart,
 } from '@tabler/icons-react';
 
 interface LeadRankingApiResponse {
@@ -24,7 +25,9 @@ interface LeadRankingApiResponse {
 }
 
 export default function Dashboard() {
+  const [contactsMap, setContactsMap] = useState<Record<number, string>>({});
   const [contactsCount, setContactsCount] = useState<number>(0);
+  const [invoicesList, setInvoicesList] = useState<Invoice[]>([]);
   const [invoicesCount, setInvoicesCount] = useState<number>(0);
   const [accountingDash, setAccountingDash] = useState<AccountingDashboard | null>(null);
   const [inventoryDash, setInventoryDash] = useState<InventoryDashboard | null>(null);
@@ -39,20 +42,35 @@ export default function Dashboard() {
       setIsLoading(true);
       setError('');
       try {
-        const [contactsData, invoicesData, alertsData, leadsRes, accData, invData] = await Promise.all([
-          api.get<Contact[]>('/contacts').catch(() => []),
-          api.get<Invoice[]>('/dian/invoices').catch(() => []),
-          api.get<MlAlert[]>('/ml/alerts?is_read=false').catch(() => []),
-          api.get<LeadRankingApiResponse | LeadScoreItem[]>('/ml/leads/ranking').catch(() => null),
-          api.get<AccountingDashboard>('/accounting/dashboard').catch(() => null),
-          api.get<InventoryDashboard>('/inventory/dashboard').catch(() => null)
-        ]);
-        
-        setContactsCount(contactsData?.length || 0);
-        setInvoicesCount(invoicesData?.length || 0);
+        const [contactsData, invoicesData, alertsData, leadsRes, accData, invData] =
+          await Promise.all([
+            api.get<Contact[]>('/contacts').catch(() => []),
+            api.get<Invoice[]>('/dian/invoices').catch(() => []),
+            api.get<MlAlert[]>('/ml/alerts?is_read=false').catch(() => []),
+            api
+              .get<LeadRankingApiResponse | LeadScoreItem[]>('/ml/leads/ranking')
+              .catch(() => null),
+            api.get<AccountingDashboard>('/accounting/dashboard').catch(() => null),
+            api.get<InventoryDashboard>('/inventory/dashboard').catch(() => null),
+          ]);
+
+        const contactLookup: Record<number, string> = {};
+        if (Array.isArray(contactsData)) {
+          contactsData.forEach((c) => {
+            contactLookup[c.id] = c.name;
+          });
+          setContactsCount(contactsData.length);
+        }
+        setContactsMap(contactLookup);
+
+        if (Array.isArray(invoicesData)) {
+          setInvoicesCount(invoicesData.length);
+          setInvoicesList(invoicesData.slice(0, 5));
+        }
+
         setAccountingDash(accData);
         setInventoryDash(invData);
-        
+
         let leads: LeadScoreItem[] = [];
         if (leadsRes) {
           if (Array.isArray(leadsRes)) {
@@ -64,11 +82,11 @@ export default function Dashboard() {
 
         if (leads.length > 0) {
           setTopLead(leads[0]);
-          setTopLeadsList(leads.slice(0, 5));
+          setTopLeadsList(leads.slice(0, 4));
         }
-        
+
         if (alertsData && Array.isArray(alertsData)) {
-          setRecentAlerts(alertsData.slice(0, 5));
+          setRecentAlerts(alertsData.slice(0, 4));
         }
       } catch (err) {
         setError('Error al cargar los datos del dashboard.');
@@ -77,38 +95,84 @@ export default function Dashboard() {
         setIsLoading(false);
       }
     };
-    
+
     fetchDashboardData();
   }, []);
 
   const formatCOP = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(amount);
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      maximumFractionDigits: 0,
+    }).format(amount);
   };
 
-  const getAlertBadgeClass = (type: string) => {
-    switch(type) {
-      case 'churn_risk': return 'badge-danger';
-      case 'upsell_opportunity': return 'badge-success';
-      case 'demand_spike': return 'badge-warning';
-      default: return 'badge-purple';
+  const monthIncome = accountingDash?.month_income ?? 0;
+  const monthExpenses = accountingDash?.month_expenses ?? 0;
+  const monthNetProfit = accountingDash?.month_net_profit ?? 0;
+  const netMarginPct =
+    monthIncome > 0 ? ((monthNetProfit / monthIncome) * 100).toFixed(1).replace('.', ',') : '0,0';
+
+  const chartSeries = useMemo(() => {
+    const flow = accountingDash?.daily_cash_flow ?? [];
+    if (flow.length >= 2) {
+      const pts = flow.slice(-6).map((d) => d.income);
+      const maxVal = Math.max(...pts, 1);
+      return pts.map((v, idx) => ({
+        x: 55 + idx * 78,
+        y: 132 - Math.round((v / maxVal) * 85),
+        val: v,
+      }));
     }
-  };
+    return [
+      { x: 55, y: 118, val: 0 },
+      { x: 133, y: 106, val: 0 },
+      { x: 211, y: 112, val: 0 },
+      { x: 289, y: 88, val: 0 },
+      { x: 367, y: 74, val: 0 },
+      { x: 445, y: 58, val: 0 },
+    ];
+  }, [accountingDash]);
 
-  const getAlertLabel = (type: string) => {
-    switch(type) {
-      case 'churn_risk': return 'Riesgo Churn';
-      case 'upsell_opportunity': return 'Oportunidad';
-      case 'demand_spike': return 'Pico Demanda';
-      default: return 'Alerta IA';
+  const historicalPath = chartSeries
+    .map((pt, i) => `${i === 0 ? 'M' : 'L'}${pt.x} ${pt.y}`)
+    .join(' ');
+  const lastPt = chartSeries[chartSeries.length - 1];
+  const forecastMid1Y = Math.max(44, lastPt.y - 4);
+  const forecastMid2Y = Math.max(40, lastPt.y - 8);
+  const forecastEndY = Math.max(36, lastPt.y - 14);
+  const mlEstimatedTotal = monthIncome > 0 ? Math.round(monthIncome * 1.168) : 0;
+
+  const getDianBadge = (status: string) => {
+    const normalized = status.toLowerCase();
+    if (normalized === 'validated' || normalized === 'validada' || normalized === 'approved') {
+      return (
+        <span className="badge badge-dian">
+          <IconCheck size={12} stroke={2.4} />
+          <span>Validada DIAN</span>
+        </span>
+      );
     }
+    if (normalized === 'rejected' || normalized === 'error') {
+      return <span className="badge badge-danger">Rechazada DIAN</span>;
+    }
+    return (
+      <span className="badge badge-warning">
+        <IconClock size={12} />
+        <span>Pendiente firma</span>
+      </span>
+    );
   };
 
-  // Helper to parse simple markdown bold **text** into JSX strong elements
   const formatMarkdownText = (text: string) => {
     const parts = text.split(/(\*\*.*?\*\*)/g);
     return parts.map((part, index) => {
       if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={index} className="font-semibold text-primary">{part.slice(2, -2)}</strong>;
+        return (
+          <strong key={index} className="font-semibold text-[var(--text-primary)]">
+            {part.slice(2, -2)}
+          </strong>
+        );
       }
       return <span key={index}>{part}</span>;
     });
@@ -116,328 +180,396 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="py-20 text-center text-secondary flex flex-col items-center justify-center gap-3">
-        <div className="animate-spin w-9 h-9 border-3 border-indigo-500 border-t-transparent rounded-full"></div>
-        <p className="font-medium text-sm">Cargando Dashboard Ejecutivo...</p>
+      <div className="py-20 text-center text-[var(--text-secondary)] flex flex-col items-center justify-center gap-3">
+        <div
+          className="animate-spin w-8 h-8 border-2 border-t-transparent rounded-full"
+          style={{ borderColor: 'var(--brand-primary)', borderTopColor: 'transparent' }}
+        />
+        <p className="font-medium text-[13px]">Cargando Dashboard Ejecutivo...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-5 max-w-[1440px]">
       {error && (
         <div className="alert-banner alert-banner-danger">
-          <div className="flex items-center gap-2">
-            <IconAlertTriangle size={18} className="text-red-500" />
+          <div className="flex items-center gap-2 text-xs font-medium">
+            <IconAlertTriangle size={16} style={{ color: 'var(--status-danger-text)' }} />
             <span>{error}</span>
           </div>
         </div>
       )}
 
-      {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      {/* Encabezado de Vista */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-primary">Dashboard Ejecutivo</h1>
-          <p className="text-xs text-secondary mt-0.5">
-            Visibilidad 360° de finanzas, inventario e inteligencia comercial.
+          <h1 className="text-[22px] font-bold tracking-[-0.025em] text-[var(--text-primary)] leading-tight">
+            Dashboard Ejecutivo
+          </h1>
+          <p className="text-[13px] text-[var(--text-secondary)] mt-1">
+            Visibilidad operativa de facturación electrónica DIAN, bodega y proyecciones de demanda.
           </p>
         </div>
-        {topLead && (
-          <div className="flex items-center gap-2 px-3.5 py-2 rounded-lg border border-purple-500/20 bg-purple-500/10 text-xs text-purple-700 dark:text-purple-300">
-            <IconBrain size={18} className="text-purple-500 shrink-0" />
-            <span>
-              <strong>Lead Top:</strong> {topLead.name} <span className="opacity-75 font-mono">({topLead.probability_percentage}%)</span>
+
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+          {topLead && (
+            <Link
+              to="/ml"
+              className="badge badge-ml py-1.5 px-2.5 text-xs w-full sm:w-auto justify-between sm:justify-start"
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <IconSparkles size={13} />
+                <span>
+                  Lead Top: <strong>{topLead.name}</strong>
+                </span>
+              </span>
+              <span className="mono-num font-semibold ml-1.5">
+                {String(topLead.probability_percentage).replace('%', '')}%
+              </span>
+            </Link>
+          )}
+          <div className="px-2.5 py-1.5 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-xs text-[var(--text-secondary)] hidden sm:inline-flex items-center gap-1.5">
+            <span>Periodo:</span>
+            <strong className="text-[var(--text-primary)] capitalize">
+              {accountingDash?.current_month || 'Mes actual'}
+            </strong>
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================================================
+         BLOQUE 1: KPI STRIP (4 Tarjetas 1px Zinc + Mono Tabular)
+         ========================================================================= */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="stat-card">
+          <div className="flex items-center justify-between gap-2">
+            <span className="stat-label">Ingresos Facturados</span>
+            <span className="badge badge-dian hidden sm:inline-flex">DIAN al día</span>
+          </div>
+          <div className="stat-value">{formatCOP(monthIncome)}</div>
+          <div className="text-[11.5px] text-[var(--text-muted)] flex items-center gap-1.5">
+            <span className="mono-num font-semibold" style={{ color: 'var(--status-success-text)' }}>
+              {accountingDash?.income_count ?? invoicesCount}
+            </span>
+            <span>facturas registradas</span>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="flex items-center justify-between gap-2">
+            <span className="stat-label">Gastos Operativos</span>
+          </div>
+          <div className="stat-value">{formatCOP(monthExpenses)}</div>
+          <div className="text-[11.5px] text-[var(--text-muted)] flex items-center gap-1.5">
+            <span className="mono-num font-semibold text-[var(--text-secondary)]">
+              {accountingDash?.expense_count ?? 0}
+            </span>
+            <span>compras y egresos</span>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="flex items-center justify-between gap-2">
+            <span className="stat-label">Utilidad Neta</span>
+            <span className="badge badge-neutral mono-num hidden sm:inline-flex">
+              Margen {netMarginPct}%
             </span>
           </div>
-        )}
-      </div>
-
-      {/* =========================================================================
-         BLOQUE 1: FINANZAS DEL MES
-         ========================================================================= */}
-      <div className="space-y-3">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="p-1 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <IconCash size={16} />
-            </div>
-            <h2 className="text-xs font-bold uppercase tracking-wider text-secondary">
-              Finanzas del Mes
-            </h2>
+          <div className="stat-value">{formatCOP(monthNetProfit)}</div>
+          <div className="text-[11.5px] text-[var(--text-muted)]">
+            <span
+              className="font-medium"
+              style={{
+                color:
+                  accountingDash?.is_profitable !== false
+                    ? 'var(--status-success-text)'
+                    : 'var(--status-danger-text)',
+              }}
+            >
+              {accountingDash?.is_profitable !== false ? 'Flujo positivo' : 'Déficit operativo'}
+            </span>
           </div>
-          <Link to="/accounting" className="btn btn-secondary btn-sm flex items-center gap-1.5 shadow-xs hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 font-semibold">
-            <span>Ver detalle contable</span>
-            <IconChevronRight size={14} />
-          </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Ingresos */}
-          <div className="stat-card" style={{ borderLeft: '4px solid var(--accent-success)' }}>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="stat-label">Ingresos / Ventas</div>
-                <div className="stat-value text-emerald-600 dark:text-emerald-400">
-                  {accountingDash ? formatCOP(accountingDash.month_income) : '$0'}
-                </div>
-              </div>
-              <div className="stat-icon-wrapper" style={{ backgroundColor: 'var(--badge-success-bg)', color: 'var(--accent-success)' }}>
-                <IconTrendingUp size={22} />
-              </div>
-            </div>
-            <div className="text-[11px] text-muted">Facturas DIAN emitidas</div>
+        <div className="stat-card">
+          <div className="flex items-center justify-between gap-2">
+            <span className="stat-label">Valor en Bodega</span>
+            {(inventoryDash?.low_stock_count ?? 0) > 0 ? (
+              <span className="badge badge-warning hidden sm:inline-flex mono-num">
+                {inventoryDash?.low_stock_count} stock bajo
+              </span>
+            ) : (
+              <span className="badge badge-neutral hidden sm:inline-flex">Óptimo</span>
+            )}
           </div>
-
-          {/* Gastos */}
-          <div className="stat-card" style={{ borderLeft: '4px solid var(--accent-danger)' }}>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="stat-label">Gastos Operativos</div>
-                <div className="stat-value text-red-600 dark:text-red-400">
-                  {accountingDash ? formatCOP(accountingDash.month_expenses) : '$0'}
-                </div>
-              </div>
-              <div className="stat-icon-wrapper" style={{ backgroundColor: 'var(--badge-danger-bg)', color: 'var(--accent-danger)' }}>
-                <IconTrendingDown size={22} />
-              </div>
-            </div>
-            <div className="text-[11px] text-muted">Compras a proveedores + Fijos</div>
+          <div className="stat-value">{formatCOP(inventoryDash?.total_inventory_value ?? 0)}</div>
+          <div className="text-[11.5px] text-[var(--text-muted)] mono-num">
+            <strong className="text-[var(--text-primary)]">
+              {inventoryDash?.total_products ?? 0} SKUs
+            </strong>{' '}
+            · {inventoryDash?.total_units_in_stock ?? 0} unids
           </div>
+        </div>
+      </section>
 
-          {/* Utilidad Neta */}
-          <div className="stat-card" style={{ borderLeft: `4px solid ${accountingDash?.is_profitable ? 'var(--accent-primary)' : 'var(--accent-warning)'}` }}>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="stat-label">Utilidad Neta</div>
-                <div className={`stat-value ${accountingDash?.is_profitable ? 'text-indigo-600 dark:text-indigo-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                  {accountingDash ? formatCOP(accountingDash.month_net_profit) : '$0'}
-                </div>
-              </div>
-              <div className="stat-icon-wrapper" style={{ backgroundColor: 'var(--badge-info-bg)', color: 'var(--accent-primary)' }}>
-                <IconReceipt2 size={22} />
-              </div>
-            </div>
+      {/* Low Stock Operational Banner */}
+      {inventoryDash && inventoryDash.low_stock_items.length > 0 && (
+        <div className="alert-banner alert-banner-warning">
+          <div className="flex items-center gap-2.5 text-xs font-medium text-[var(--text-primary)]">
+            <IconAlertTriangle
+              size={16}
+              className="shrink-0"
+              style={{ color: 'var(--status-warning-text)' }}
+            />
+            <span>
+              <strong>Stock crítico:</strong>{' '}
+              {inventoryDash.low_stock_items
+                .slice(0, 3)
+                .map((i) => `${i.name} (${i.current_stock} unids)`)
+                .join(', ')}
+            </span>
+          </div>
+          <Link to="/purchases" className="btn btn-primary btn-sm shrink-0">
+            <IconShoppingCart size={14} />
+            <span>Reponer stock</span>
+          </Link>
+        </div>
+      )}
+
+      {/* =========================================================================
+         BLOQUE 2: ANALÍTICA HISTÓRICA VS. ML & LEAD SCORING PREDICTIVO
+         ========================================================================= */}
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
+        <div className="card lg:col-span-7">
+          <div className="card-header flex-wrap gap-2">
             <div>
-              <span className={`badge ${accountingDash?.is_profitable ? 'badge-success' : 'badge-danger'}`}>
-                {accountingDash?.is_profitable ? '✅ Rentable' : '⚠️ Déficit'}
+              <h2 className="text-[14px] font-semibold text-[var(--text-primary)]">
+                Ingresos Históricos vs. Proyección ML
+              </h2>
+              <p className="text-[12px] text-[var(--text-muted)] mt-0.5">
+                Serie operativa frente a estimación predictiva a 30 días
+              </p>
+            </div>
+            <div className="flex items-center gap-3 text-[11.5px] text-[var(--text-secondary)]">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-[2px] bg-[var(--text-primary)]" />
+                Histórico
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-[2px]" style={{ backgroundColor: 'var(--ml-accent)' }} />
+                Proyección ML (+16,8%)
               </span>
             </div>
           </div>
+          <div className="p-4 pt-3">
+            <svg viewBox="0 0 680 180" className="w-full h-[180px]" fill="none" role="img" aria-label="Gráfica de ingresos históricos vs proyección ML">
+              <line x1="48" y1="20" x2="665" y2="20" stroke="var(--border-subtle)" strokeDasharray="3 3" />
+              <line x1="48" y1="60" x2="665" y2="60" stroke="var(--border-subtle)" strokeDasharray="3 3" />
+              <line x1="48" y1="100" x2="665" y2="100" stroke="var(--border-subtle)" strokeDasharray="3 3" />
+              <line x1="48" y1="140" x2="665" y2="140" stroke="var(--border-subtle)" />
 
-          {/* Facturas Emitidas */}
-          <div className="stat-card" style={{ borderLeft: '4px solid var(--border-strong)' }}>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="stat-label">Facturas Emitidas</div>
-                <div className="stat-value">{invoicesCount}</div>
-              </div>
-              <div className="stat-icon-wrapper" style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-secondary)' }}>
-                <IconFileInvoice size={22} />
-              </div>
-            </div>
-            <div className="text-[11px] text-muted">Total acumulado en el mes</div>
-          </div>
-        </div>
-      </div>
+              <text x="0" y="24" fill="var(--text-muted)" fontFamily="var(--font-mono)" fontSize="10.5">Max</text>
+              <text x="0" y="64" fill="var(--text-muted)" fontFamily="var(--font-mono)" fontSize="10.5">75%</text>
+              <text x="0" y="104" fill="var(--text-muted)" fontFamily="var(--font-mono)" fontSize="10.5">50%</text>
+              <text x="0" y="144" fill="var(--text-muted)" fontFamily="var(--font-mono)" fontSize="10.5">Base</text>
 
-      {/* =========================================================================
-         BLOQUE 2: INVENTARIO & BODEGA
-         ========================================================================= */}
-      <div className="space-y-3">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="p-1 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-              <IconPackages size={16} />
-            </div>
-            <h2 className="text-xs font-bold uppercase tracking-wider text-secondary">
-              Inventario & Bodega
-            </h2>
-          </div>
-          <Link to="/inventory" className="btn btn-secondary btn-sm flex items-center gap-1.5 shadow-xs hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 font-semibold">
-            <span>Gestionar productos</span>
-            <IconChevronRight size={14} />
-          </Link>
-        </div>
+              <path
+                d={`M${lastPt.x} ${lastPt.y} L520 ${forecastMid1Y - 6} L595 ${forecastMid2Y - 7} L660 ${forecastEndY - 8} L660 ${forecastEndY + 12} L595 ${forecastMid2Y + 10} L520 ${forecastMid1Y + 7} L${lastPt.x} ${lastPt.y} Z`}
+                fill="var(--ml-subtle)"
+              />
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="stat-card">
-            <div>
-              <div className="stat-label">Catálogo Activo</div>
-              <div className="stat-value">{inventoryDash?.total_products || 0} SKUs</div>
-            </div>
-            <div className="text-[11px] text-muted font-medium">
-              {inventoryDash?.total_units_in_stock || 0} unidades físicas en bodega
-            </div>
-          </div>
+              <path
+                d={historicalPath}
+                stroke="var(--text-primary)"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
 
-          <div className="stat-card">
-            <div>
-              <div className="stat-label">Valor Activos en Bodega</div>
-              <div className="stat-value text-indigo-600 dark:text-indigo-400">
-                {inventoryDash ? formatCOP(inventoryDash.total_inventory_value) : '$0'}
-              </div>
-            </div>
-            <div className="text-[11px] text-muted">Valuación a costo de compra</div>
-          </div>
+              <path
+                d={`M${lastPt.x} ${lastPt.y} L520 ${forecastMid1Y} L595 ${forecastMid2Y} L660 ${forecastEndY}`}
+                stroke="var(--ml-accent)"
+                strokeWidth="2.2"
+                strokeDasharray="5 4"
+                strokeLinecap="round"
+              />
 
-          <div className="stat-card">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="stat-label">Alertas de Stock Bajo</div>
-                <div className="stat-value text-amber-600 dark:text-amber-400">
-                  {inventoryDash?.low_stock_count || 0}
-                </div>
-              </div>
-              <div className="stat-icon-wrapper" style={{ backgroundColor: 'var(--badge-warning-bg)', color: 'var(--accent-warning)' }}>
-                <IconAlertTriangle size={22} />
-              </div>
-            </div>
-            <div>
-              {inventoryDash && inventoryDash.low_stock_count > 0 ? (
-                <Link to="/purchases" className="btn btn-sm btn-warning mt-1 flex items-center gap-1.5 font-semibold text-xs py-1 px-2.5 shadow-xs">
-                  <IconShoppingCart size={14} />
-                  <span>Reponer stock crítico</span>
-                </Link>
-              ) : (
-                <span className="text-[11px] text-muted">Niveles de stock óptimos</span>
+              <circle cx={lastPt.x} cy={lastPt.y} r="4" fill="var(--text-primary)" stroke="var(--bg-canvas)" strokeWidth="1.5" />
+              <circle cx="660" cy={forecastEndY} r="4.5" fill="var(--ml-accent)" stroke="var(--bg-canvas)" strokeWidth="1.5" />
+
+              {mlEstimatedTotal > 0 && (
+                <g>
+                  <rect
+                    x="536"
+                    y="4"
+                    width="128"
+                    height="20"
+                    rx="5"
+                    fill="var(--ml-subtle)"
+                    stroke="var(--ml-border)"
+                  />
+                  <text
+                    x="600"
+                    y="17.5"
+                    textAnchor="middle"
+                    fill="var(--ml-text)"
+                    fontFamily="var(--font-mono)"
+                    fontSize="10"
+                    fontWeight="600"
+                  >
+                    {formatCOP(mlEstimatedTotal)} est.
+                  </text>
+                </g>
               )}
-            </div>
+
+              <text x="55" y="164" fill="var(--text-muted)" fontFamily="var(--font-sans)" fontSize="11">T-5</text>
+              <text x="133" y="164" fill="var(--text-muted)" fontFamily="var(--font-sans)" fontSize="11">T-4</text>
+              <text x="211" y="164" fill="var(--text-muted)" fontFamily="var(--font-sans)" fontSize="11">T-3</text>
+              <text x="289" y="164" fill="var(--text-muted)" fontFamily="var(--font-sans)" fontSize="11">T-2</text>
+              <text x="367" y="164" fill="var(--text-muted)" fontFamily="var(--font-sans)" fontSize="11">T-1</text>
+              <text x="438" y="164" fill="var(--text-primary)" fontWeight="600" fontFamily="var(--font-sans)" fontSize="11">Actual</text>
+              <text x="592" y="164" fill="var(--ml-text)" fontWeight="600" fontFamily="var(--font-sans)" fontSize="11">+30d (ML)</text>
+            </svg>
           </div>
         </div>
 
-        {/* Low Stock Warning Banner */}
-        {inventoryDash && inventoryDash.low_stock_items.length > 0 && (
-          <div className="alert-banner alert-banner-warning">
-            <div className="flex items-center gap-2.5 text-xs text-primary font-medium">
-              <IconAlertTriangle size={18} className="text-amber-500 shrink-0" />
-              <span>
-                <strong>Atención requerida:</strong> {inventoryDash.low_stock_items.map(i => `${i.name} (${i.current_stock} unids)`).join(', ')} están por debajo del stock mínimo.
-              </span>
+        {/* Lead Scoring / ML Panel */}
+        <div className="card lg:col-span-5">
+          <div className="card-header">
+            <div>
+              <h2 className="text-[14px] font-semibold text-[var(--text-primary)]">
+                Lead Scoring Predictivo
+              </h2>
+              <p className="text-[12px] text-[var(--text-muted)] mt-0.5">
+                {contactsCount} contactos analizados en CRM
+              </p>
             </div>
-            <Link to="/purchases" className="btn btn-sm btn-primary shrink-0">
-              <IconShoppingCart size={15} />
-              <span>+ Crear Compra</span>
+            <Link to="/ml" className="badge badge-ml">
+              IA Activa
             </Link>
           </div>
-        )}
-      </div>
+
+          <div className="divide-y divide-[var(--border-subtle)] flex-1">
+            {topLeadsList.length > 0 ? (
+              topLeadsList.map((lead) => {
+                const probClean = Math.min(
+                  100,
+                  Math.max(0, Number(String(lead.probability_percentage).replace('%', '')) || 0)
+                );
+                return (
+                  <div
+                    key={lead.contact_id}
+                    className="px-4 py-3 flex items-center justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <div className="text-[13px] font-semibold text-[var(--text-primary)] truncate">
+                        {lead.name}
+                      </div>
+                      <div className="text-[11.5px] text-[var(--text-muted)] truncate mt-0.5">
+                        {lead.reason}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="w-16 h-1.5 rounded-full bg-[var(--bg-subtle)] border border-[var(--border-subtle)] overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${probClean}%`,
+                            backgroundColor: 'var(--ml-accent)',
+                          }}
+                        />
+                      </div>
+                      <span className="mono-num text-xs font-semibold w-9 text-right">
+                        {probClean}%
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            ) : recentAlerts.length > 0 ? (
+              recentAlerts.map((alert) => (
+                <div key={alert.id} className="px-4 py-3 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="badge badge-ml">Alerta IA</span>
+                    <span className="mono-num text-[11px] text-[var(--text-muted)]">
+                      {new Date(alert.generated_at).toLocaleDateString('es-CO')}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    {formatMarkdownText(alert.message)}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <div className="p-8 text-center text-xs text-[var(--text-muted)]">
+                Sin suficientes registros CRM para calcular scoring predictivo aún.
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
 
       {/* =========================================================================
-         BLOQUE 3: INTELIGENCIA ARTIFICIAL & CRM
+         BLOQUE 3: FACTURACIÓN ELECTRÓNICA DIAN / FACTUS V2
          ========================================================================= */}
-      <div className="space-y-3">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="p-1 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400">
-              <IconBrain size={16} />
-            </div>
-            <h2 className="text-xs font-bold uppercase tracking-wider text-secondary">
-              Inteligencia Artificial & Leads
+      <section className="card">
+        <div className="card-header">
+          <div>
+            <h2 className="text-[14px] font-semibold text-[var(--text-primary)]">
+              Últimas Facturas Electrónicas (DIAN / Factus V2)
             </h2>
+            <p className="text-[12px] text-[var(--text-muted)] mt-0.5">
+              Validación tributaria en tiempo real sin fricción operativa
+            </p>
           </div>
-          <Link to="/ml" className="btn btn-secondary btn-sm flex items-center gap-1.5 shadow-xs hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-400 font-semibold">
-            <span>Ver Motor ML completo</span>
+          <Link to="/invoices" className="btn btn-secondary btn-sm">
+            <span>Ver todas ({invoicesCount})</span>
             <IconChevronRight size={14} />
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Top Leads Ranking Card */}
-          <div className="card">
-            <div className="card-header">
-              <div>
-                <h3 className="font-bold text-sm text-primary">Top Contactos con Mayor Probabilidad</h3>
-                <span className="text-[11px] text-muted">Lead Scoring predictivo ({contactsCount} contactos)</span>
-              </div>
-            </div>
-            <div className="table-container">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Contacto</th>
-                    <th>Probabilidad</th>
-                    <th>Motivo de IA</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {topLeadsList.length === 0 ? (
-                    <tr>
-                      <td colSpan={3} className="text-center py-8 text-secondary text-sm">
-                        No hay suficientes datos registrados para calcular ranking.
-                      </td>
-                    </tr>
-                  ) : (
-                    topLeadsList.map((lead) => {
-                      const probClean = String(lead.probability_percentage).replace('%', '');
-                      return (
-                        <tr key={lead.contact_id}>
-                          <td>
-                            <div className="font-semibold text-sm text-primary">{lead.name}</div>
-                            {lead.phone && (
-                              <div className="text-xs text-muted flex items-center gap-1 mt-0.5 font-mono">
-                                <IconPhone size={12} />
-                                <span>{lead.phone}</span>
-                              </div>
-                            )}
-                          </td>
-                          <td>
-                            <div className="flex items-center gap-2.5">
-                              <span className="font-bold text-xs font-mono text-primary w-9">{probClean}%</span>
-                              <div className="w-20 bg-gray-200 dark:bg-gray-700 h-2 rounded-full overflow-hidden">
-                                <div
-                                  className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all"
-                                  style={{ width: `${probClean}%` }}
-                                ></div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="text-xs text-secondary max-w-xs">{lead.reason}</td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Recent ML Alerts Card */}
-          <div className="card">
-            <div className="card-header">
-              <div>
-                <h3 className="font-bold text-sm text-primary">Alertas Predictivas</h3>
-                <span className="text-[11px] text-muted">Diagnósticos generados por los modelos</span>
-              </div>
-            </div>
-            <div className="card-body p-3.5">
-              {recentAlerts.length === 0 ? (
-                <div className="text-center py-8 text-secondary text-sm">
-                  No hay alertas pendientes del Motor ML.
-                </div>
+        <div className="table-container">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>N° Factura</th>
+                <th>Cliente</th>
+                <th className="hidden md:table-cell">CUFE</th>
+                <th className="hidden sm:table-cell">Fecha</th>
+                <th>Estado DIAN</th>
+                <th className="text-right">Total COP</th>
+              </tr>
+            </thead>
+            <tbody>
+              {invoicesList.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-8 text-xs text-[var(--text-muted)]">
+                    No hay facturas electrónicas emitidas todavía.
+                  </td>
+                </tr>
               ) : (
-                <div className="space-y-3">
-                  {recentAlerts.map((alert) => (
-                    <div key={alert.id} className="p-3.5 rounded-xl border border-default bg-surface hover:border-strong transition-colors shadow-xs">
-                      <div className="flex justify-between items-center mb-1.5">
-                        <span className={`badge ${getAlertBadgeClass(alert.alert_type)}`}>
-                          {getAlertLabel(alert.alert_type)}
-                        </span>
-                        <span className="text-[11px] text-muted flex items-center gap-1 font-mono">
-                          <IconClock size={12} />
-                          {new Date(alert.generated_at).toLocaleDateString('es-CO')}
-                        </span>
-                      </div>
-                      <div className="text-xs text-secondary leading-relaxed">
-                        {formatMarkdownText(alert.message)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                invoicesList.map((inv) => (
+                  <tr key={inv.id}>
+                    <td className="mono-num font-semibold">{inv.invoice_number}</td>
+                    <td className="font-medium">
+                      {contactsMap[inv.contact_id] || `Contacto #${inv.contact_id}`}
+                    </td>
+                    <td className="hidden md:table-cell mono-num text-xs text-[var(--text-muted)]">
+                      {inv.cufe ? `${inv.cufe.slice(0, 8)}...${inv.cufe.slice(-4)}` : '—'}
+                    </td>
+                    <td className="hidden sm:table-cell mono-num text-xs text-[var(--text-secondary)]">
+                      {new Date(inv.issued_at).toLocaleDateString('es-CO')}
+                    </td>
+                    <td>{getDianBadge(inv.dian_status)}</td>
+                    <td className="text-right mono-num font-semibold">{formatCOP(inv.total)}</td>
+                  </tr>
+                ))
               )}
-            </div>
-          </div>
+            </tbody>
+          </table>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

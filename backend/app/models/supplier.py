@@ -1,6 +1,12 @@
 from typing import Optional
 from sqlmodel import SQLModel, Field
-from datetime import datetime
+from datetime import datetime, timezone
+
+
+def get_utc_now() -> datetime:
+    """Retorna la hora actual en UTC con timezone-aware."""
+    return datetime.now(timezone.utc)
+
 
 class Supplier(SQLModel, table=True):
     __tablename__ = "suppliers"
@@ -14,4 +20,4 @@ class Supplier(SQLModel, table=True):
     contact_person: Optional[str] = None
     notes: Optional[str] = None
     is_active: bool = Field(default=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=get_utc_now)

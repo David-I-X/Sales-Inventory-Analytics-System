@@ -11,7 +11,7 @@ Los tests de integración (login, refresh, logout vía HTTP) requieren
 el servidor corriendo y se ejecutan con Playwright en test_auth_integration.py.
 """
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
@@ -173,3 +173,64 @@ class TestWebhookSecurityIntegration:
         secret = "nested_test_secret"
         sig = sign_payload(payload, secret)
         assert verify_signature(payload, sig, secret) is True
+
+
+class TestAuthTimezoneAndSignup:
+    """Verifica manejo UTC timezone-aware en Auth y esquemas de registro empresarial."""
+
+    def test_access_token_and_models_use_utc_aware_datetimes(self):
+        from app.core.auth import create_access_token, _ensure_utc
+        from app.models.user import User, RefreshToken
+
+        user = User(
+            id=10,
+            email="tec360@example.com",
+            hashed_password="fake",
+            full_name="David",
+            role="admin",
+            tenant_id=2,
+        )
+        assert user.created_at.tzinfo == timezone.utc
+
+        _, _, expires_at = create_access_token(user)
+        assert expires_at.tzinfo == timezone.utc
+
+        rt = RefreshToken(
+            token_hash="abc",
+            user_id=10,
+            family_id="fam-1",
+            expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+        )
+        assert rt.created_at.tzinfo == timezone.utc
+
+        naive_dt = datetime(2026, 11, 19, 12, 0, 0)
+        aware_dt = _ensure_utc(naive_dt)
+        assert aware_dt is not None
+        assert aware_dt.tzinfo == timezone.utc
+        assert (aware_dt < datetime.now(timezone.utc)) in (True, False)
+        assert _ensure_utc(None) is None
+
+    def test_user_response_and_company_signup_schemas(self):
+        from app.schemas.user import UserResponse, CompanySignupRequest
+
+        req = CompanySignupRequest(
+            company_name="Tec360 Soluciones S.A.S.",
+            business_profile="services",
+            full_name="David Aguirre",
+            email="david@tec360.co",
+            password="Password123!",
+        )
+        assert req.business_profile == "services"
+
+        resp = UserResponse(
+            id=1,
+            email="admin@demo.com",
+            full_name="Carlos Mendoza",
+            role="admin",
+            tenant_id=1,
+            tenant_name="Distribuidora Los Andes S.A.S.",
+            enabled_modules=["dian_invoicing", "quotes"],
+            is_active=True,
+            created_at=datetime.now(timezone.utc),
+        )
+        assert resp.tenant_name == "Distribuidora Los Andes S.A.S."

@@ -2,9 +2,12 @@
 Endpoints de autenticación y gestión de usuarios.
 """
 import logging
+import re
+import secrets
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlmodel import Session, select
-from sqlalchemy import text
+from sqlalchemy import func
 
 from app.core.database import get_session, engine
 from app.core.config import settings
@@ -16,9 +19,12 @@ from app.core.auth import (
 from app.core.token_blacklist import token_blacklist
 from app.models.user import User, RefreshToken
 from app.models.tenant import Tenant
+from app.schemas.tenant import TenantCreate
+from app.api.tenants import register_tenant
 from app.schemas.user import (
     UserLogin, UserRegister, UserCreate, UserResponse,
-    TokenPair, RefreshRequest, MessageResponse
+    TokenPair, RefreshRequest, MessageResponse,
+    CompanySignupRequest, CompanySignupResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -88,8 +94,7 @@ def logout(
             jti = payload.get("jti")
             exp = payload.get("exp")
             if jti and exp:
-                from datetime import datetime
-                expires_at = datetime.utcfromtimestamp(exp)
+                expires_at = datetime.fromtimestamp(exp, tz=timezone.utc)
                 token_blacklist.blacklist_token(jti, expires_at, session)
         except Exception:
             pass  # Token ya fue validado por get_current_user
@@ -150,17 +155,100 @@ def register_first_admin(user_in: UserRegister, session: Session = Depends(get_s
     return user
 
 
+@router.post("/signup-company", response_model=CompanySignupResponse)
+def signup_company(payload: CompanySignupRequest, session: Session = Depends(get_session)):
+    """
+    Registro autoservicio de empresa + usuario administrador inicial.
+    Crea el Tenant con su schema aislado, configura los módulos iniciales según perfil
+    y retorna el par de tokens JWT para ingresar sin fricción.
+    """
+    company_name = payload.company_name.strip()
+    full_name = payload.full_name.strip()
+    clean_email = payload.email.strip().lower()
+
+    if not company_name or not full_name or "@" not in clean_email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Nombre de empresa, nombre completo y correo válido son obligatorios."
+        )
+    if len(payload.password) < 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La contraseña debe tener al menos 6 caracteres."
+        )
+
+    existing_user = session.exec(
+        select(User).where(func.lower(User.email) == clean_email)
+    ).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Este correo electrónico ya está registrado en la plataforma."
+        )
+
+    raw_slug = re.sub(r"[^a-z0-9]+", "_", company_name.lower()).strip("_")[:20] or "empresa"
+    schema_name = f"emp_{raw_slug}_{secrets.token_hex(2)}"
+
+    if payload.business_profile == "complete":
+        enabled_modules = [
+            "dian_invoicing",
+            "accounting",
+            "quotes",
+            "inventory",
+            "purchases",
+            "ml_leads",
+            "ml_inventory",
+        ]
+    else:
+        enabled_modules = ["dian_invoicing", "accounting", "quotes", "ml_leads"]
+
+    tenant = register_tenant(
+        TenantCreate(
+            name=company_name,
+            schema_name=schema_name,
+            plan="growth",
+            enabled_modules=enabled_modules,
+        ),
+        session=session,
+    )
+
+    user = User(
+        email=clean_email,
+        hashed_password=hash_password(payload.password),
+        full_name=full_name,
+        role="admin",
+        tenant_id=tenant.id,
+    )
+    session.add(user)
+    session.flush()
+
+    access_token, _, _ = create_access_token(user)
+    refresh_token = create_refresh_token(user, session)
+    session.commit()
+
+    logger.info(f"[Auth] Empresa '{tenant.name}' (schema={tenant.schema_name}) registrada por {clean_email}")
+    return CompanySignupResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        tenant_id=tenant.id,
+        tenant_name=tenant.name,
+        user_email=user.email,
+    )
+
+
 @router.get("/me", response_model=UserResponse)
 def get_me(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Retorna la información del usuario autenticado junto con los módulos activos de su tenant."""
+    """Retorna la información del usuario autenticado junto con el nombre y módulos activos de su tenant."""
     tenant = session.get(Tenant, current_user.tenant_id)
     modules = tenant.enabled_modules if tenant and tenant.enabled_modules else ["dian_invoicing", "accounting", "ml_leads"]
     
     resp = UserResponse.model_validate(current_user)
     resp.enabled_modules = modules
+    resp.tenant_name = tenant.name if tenant else None
     return resp
 
 

@@ -1,0 +1,87 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "brand": {
+    "name": "Vertical",
+    "categoryDescriptor": "Vertical OS / Vertical ERP",
+    "compositionRule": "85/10/5"
+  },
+  "color": {
+    "light": {
+      "bg": {
+        "canvas": { "value": "#FFFFFF", "type": "color" },
+        "surface": { "value": "#FAFAFA", "type": "color" },
+        "subtle": { "value": "#F4F4F5", "type": "color" }
+      },
+      "border": {
+        "subtle": { "value": "#E4E4E7", "type": "color" },
+        "strong": { "value": "#D4D4D8", "type": "color" }
+      },
+      "text": {
+        "primary": { "value": "#09090B", "type": "color" },
+        "secondary": { "value": "#52525B", "type": "color" },
+        "muted": { "value": "#63636E", "type": "color" }
+      },
+      "brand": {
+        "primary": { "value": "#059669", "type": "color" },
+        "solid": { "value": "#047857", "type": "color" },
+        "hover": { "value": "#065F46", "type": "color" },
+        "subtle": { "value": "#ECFDF5", "type": "color" },
+        "border": { "value": "#A7F3D0", "type": "color" }
+      },
+      "ml": {
+        "accent": { "value": "#7C3AED", "type": "color" },
+        "subtle": { "value": "#F5F3FF", "type": "color" }
+      },
+      "status": {
+        "successText": { "value": "#065F46", "type": "color" },
+        "successBg": { "value": "#ECFDF5", "type": "color" },
+        "warningText": { "value": "#92400E", "type": "color" },
+        "warningBg": { "value": "#FFFBEB", "type": "color" },
+        "dangerText": { "value": "#991B1B", "type": "color" },
+        "dangerBg": { "value": "#FEF2F2", "type": "color" }
+      }
+    },
+    "dark": {
+      "bg": {
+        "canvas": { "value": "#09090B", "type": "color" },
+        "surface": { "value": "#111114", "type": "color" },
+        "subtle": { "value": "#18181B", "type": "color" }
+      },
+      "border": {
+        "subtle": { "value": "#27272A", "type": "color" },
+        "strong": { "value": "#3F3F46", "type": "color" }
+      },
+      "text": {
+        "primary": { "value": "#FAFAFA", "type": "color" },
+        "secondary": { "value": "#A1A1AA", "type": "color" },
+        "muted": { "value": "#8E8E98", "type": "color" }
+      },
+      "brand": {
+        "primary": { "value": "#10B981", "type": "color" },
+        "onPrimary": { "value": "#09090B", "type": "color" },
+        "hover": { "value": "#34D399", "type": "color" },
+        "subtle": { "value": "rgba(16, 185, 129, 0.12)", "type": "color" },
+        "border": { "value": "rgba(16, 185, 129, 0.28)", "type": "color" }
+      },
+      "ml": {
+        "accent": { "value": "#8B5CF6", "type": "color" },
+        "text": { "value": "#C4B5FD", "type": "color" },
+        "subtle": { "value": "rgba(139, 92, 246, 0.12)", "type": "color" }
+      }
+    }
+  },
+  "font": {
+    "family": {
+      "sans": { "value": "'Geist', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif", "type": "fontFamily" },
+      "mono": { "value": "'Geist Mono', 'JetBrains Mono', monospace", "type": "fontFamily" }
+    }
+  },
+  "radius": {
+    "sm": { "value": "6px", "type": "dimension" },
+    "md": { "value": "8px", "type": "dimension" },
+    "lg": { "value": "12px", "type": "dimension" }
+  },
+  "spacing": {
+    "unit": { "value": "4px", "type": "dimension" }
+  }
+}

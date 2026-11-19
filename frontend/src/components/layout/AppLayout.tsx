@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { ProtectedRoute } from './ProtectedRoute';
@@ -9,13 +9,33 @@ interface AppLayoutProps {
 }
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ title, children }) => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <ProtectedRoute>
-      <div className="app-layout" style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden' }}>
-        <Sidebar />
-        <div className="main-content" style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, height: '100vh', overflow: 'hidden' }}>
-          <Header title={title} />
-          <main className="content-area" style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-6)' }}>
+      <div
+        className="app-layout flex h-screen w-screen overflow-hidden"
+        style={{ backgroundColor: 'var(--bg-canvas)', color: 'var(--text-primary)' }}
+      >
+        {mobileMenuOpen && (
+          <div
+            className="fixed inset-0 z-30 bg-black/40 md:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
+        <Sidebar
+          mobileOpen={mobileMenuOpen}
+          onCloseMobile={() => setMobileMenuOpen(false)}
+        />
+
+        <div className="main-content flex flex-col flex-1 min-w-0 h-screen overflow-hidden">
+          <Header
+            title={title}
+            onOpenMobileMenu={() => setMobileMenuOpen(true)}
+          />
+          <main className="content-area flex-1 overflow-y-auto p-4 md:p-7">
             {children}
           </main>
         </div>

@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from app.core.config import settings
 from app.api import tenants
 from app.api import invoices
@@ -316,6 +316,12 @@ if os.path.isdir(SPA_DIR):
         if full_path.startswith("api/") or full_path == "api":
             from fastapi import HTTPException
             raise HTTPException(status_code=404, detail="API endpoint not found")
+
+        if full_path:
+            spa_root = os.path.realpath(SPA_DIR)
+            candidate = os.path.realpath(os.path.join(SPA_DIR, full_path))
+            if (candidate == spa_root or candidate.startswith(spa_root + os.sep)) and os.path.isfile(candidate):
+                return FileResponse(candidate)
 
         index_path = os.path.join(SPA_DIR, "index.html")
         if os.path.isfile(index_path):

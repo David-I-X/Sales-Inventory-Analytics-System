@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import type { User } from '../types';
+import type { User, CompanySignupPayload } from '../types';
 import { authService } from '../services/authService';
 import { tokenManager } from '../services/tokenManager';
 
@@ -8,7 +8,8 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
+  signupCompany: (payload: CompanySignupPayload, rememberMe?: boolean) => Promise<void>;
   logout: () => Promise<void>;
   hasModule: (slug: string) => boolean;
   updateEnabledModules: (modules: string[]) => void;
@@ -41,8 +42,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     initAuth();
   }, [initAuth]);
 
-  const login = async (email: string, password: string) => {
-    await authService.login(email, password);
+  const login = async (email: string, password: string, rememberMe = true) => {
+    await authService.login(email, password, rememberMe);
+    const userData = await authService.getMe();
+    setUser(userData);
+  };
+
+  const signupCompany = async (payload: CompanySignupPayload, rememberMe = true) => {
+    await authService.signupCompany(payload, rememberMe);
     const userData = await authService.getMe();
     setUser(userData);
   };
@@ -76,6 +83,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isLoading,
         isAuthenticated: !!user && tokenManager.isAuthenticated(),
         login,
+        signupCompany,
         logout,
         hasModule,
         updateEnabledModules,

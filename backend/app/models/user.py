@@ -6,7 +6,12 @@ es global (un usuario pertenece a un tenant, pero el login es centralizado).
 """
 from typing import Optional
 from sqlmodel import SQLModel, Field
-from datetime import datetime
+from datetime import datetime, timezone
+
+
+def get_utc_now() -> datetime:
+    """Retorna la hora actual en UTC con timezone-aware."""
+    return datetime.now(timezone.utc)
 
 
 class User(SQLModel, table=True):
@@ -26,7 +31,7 @@ class User(SQLModel, table=True):
     failed_login_attempts: int = Field(default=0)
     locked_until: Optional[datetime] = Field(default=None)
     
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=get_utc_now)
 
 
 class RefreshToken(SQLModel, table=True):
@@ -44,7 +49,7 @@ class RefreshToken(SQLModel, table=True):
     family_id: str = Field(index=True)  # Agrupa tokens de la misma sesión
     is_revoked: bool = Field(default=False)
     expires_at: datetime
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=get_utc_now)
 
 
 class TokenBlacklistEntry(SQLModel, table=True):
@@ -55,4 +60,4 @@ class TokenBlacklistEntry(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     jti: str = Field(unique=True, index=True)  # JWT ID único
     expires_at: datetime  # Cuándo expira el JWT original
-    blacklisted_at: datetime = Field(default_factory=datetime.utcnow)
+    blacklisted_at: datetime = Field(default_factory=get_utc_now)

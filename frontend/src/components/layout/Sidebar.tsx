@@ -1,26 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { 
-  IconHome, 
-  IconUsers, 
-  IconFileInvoice, 
+import {
+  IconLayoutGrid,
+  IconUsers,
+  IconFileInvoice,
+  IconPackages,
+  IconShoppingCart,
+  IconReceipt2,
+  IconBrain,
+  IconUserPlus,
+  IconUser,
+  IconLogout,
+  IconLayoutSidebarLeftCollapse,
+  IconLayoutSidebarLeftExpand,
+  IconApps,
   IconFileText,
-  IconPackages, 
-  IconShoppingCart, 
-  IconReceipt2, 
-  IconBrain, 
-  IconUserPlus, 
-  IconUser, 
-  IconLogout, 
-  IconLayoutSidebarLeftCollapse, 
-  IconLayoutSidebarLeftExpand, 
-  IconBuildingStore,
-  IconApps
+  IconX,
 } from '@tabler/icons-react';
 import { useAuth } from '../../context/AuthContext';
 import { ThemeToggle } from '../ui/ThemeToggle';
+import { BrandLogo } from '../brand/BrandLogo';
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+  mobileOpen?: boolean;
+  onCloseMobile?: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({
+  mobileOpen = false,
+  onCloseMobile,
+}) => {
   const { user, logout, hasModule } = useAuth();
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('sidebar_collapsed') === 'true';
@@ -34,128 +43,156 @@ export const Sidebar: React.FC = () => {
     setCollapsed(!collapsed);
   };
 
-  const navClass = ({ isActive }: { isActive: boolean }) => 
+  const navClass = ({ isActive }: { isActive: boolean }) =>
     `sidebar-item ${isActive ? 'sidebar-item-active' : ''}`;
 
+  const handleLinkClick = () => {
+    if (onCloseMobile) onCloseMobile();
+  };
+
   return (
-    <aside 
-      className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''}`}
-      onMouseEnter={() => collapsed && setCollapsed(false)}
-      onMouseLeave={() => localStorage.getItem('sidebar_collapsed') === 'true' && setCollapsed(true)}
+    <aside
+      className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''} ${
+        mobileOpen ? 'sidebar-mobile-open' : ''
+      }`}
     >
       <div className="sidebar-header">
         {!collapsed ? (
           <div className="sidebar-brand">
-            <div className="flex items-center gap-2">
-              <div className="p-1 rounded-md bg-indigo-600 text-white shrink-0 shadow-xs">
-                <IconBuildingStore size={18} />
-              </div>
-              <span className="sidebar-logo-text">SaaS Vertical</span>
-            </div>
+            <BrandLogo variant="full" size="md" />
             {user?.tenant_id && (
-              <span className="sidebar-tenant-name mt-1">Empresa #{user.tenant_id}</span>
+              <span className="sidebar-tenant-name">
+                <span
+                  className="inline-block w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ backgroundColor: 'var(--brand-primary)' }}
+                />
+                <span>{user.tenant_name || `Empresa #${user.tenant_id}`}</span>
+              </span>
             )}
           </div>
         ) : (
-          <div className="p-1 rounded-md bg-indigo-600 text-white mx-auto shadow-xs">
-            <IconBuildingStore size={18} />
+          <div className="mx-auto">
+            <BrandLogo variant="mark" size="md" />
           </div>
         )}
-        <button 
-          className="btn-ghost p-1.5 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700 text-muted hover:text-primary transition-colors" 
+
+        <button
+          className="btn-ghost p-1.5 rounded-md hidden md:inline-flex"
           onClick={toggleSidebar}
           aria-label="Alternar barra lateral"
-          title={collapsed ? "Expandir" : "Colapsar"}
+          title={collapsed ? 'Expandir' : 'Colapsar'}
         >
-          {collapsed ? <IconLayoutSidebarLeftExpand size={18} /> : <IconLayoutSidebarLeftCollapse size={18} />}
+          {collapsed ? (
+            <IconLayoutSidebarLeftExpand size={17} />
+          ) : (
+            <IconLayoutSidebarLeftCollapse size={17} />
+          )}
         </button>
+
+        {onCloseMobile && (
+          <button
+            className="btn-ghost p-1.5 rounded-md md:hidden"
+            onClick={onCloseMobile}
+            aria-label="Cerrar menú"
+          >
+            <IconX size={18} />
+          </button>
+        )}
       </div>
 
-      <nav className="sidebar-nav">
+      <nav className="sidebar-nav" aria-label="Navegación principal">
         <div className="sidebar-section">
-          <div className="sidebar-section-title">
-            {!collapsed && <span>Principal</span>}
-          </div>
-          <NavLink to="/" className={navClass} end>
-            <IconHome size={18} className="sidebar-icon shrink-0" />
+          {!collapsed && <div className="sidebar-section-title">Operación</div>}
+
+          <NavLink to="/" className={navClass} end onClick={handleLinkClick}>
+            <IconLayoutGrid size={17} className="sidebar-icon shrink-0" />
             {!collapsed && <span className="sidebar-text">Dashboard</span>}
           </NavLink>
-          <NavLink to="/contacts" className={navClass}>
-            <IconUsers size={18} className="sidebar-icon shrink-0" />
-            {!collapsed && <span className="sidebar-text">Contactos</span>}
+
+          <NavLink to="/contacts" className={navClass} onClick={handleLinkClick}>
+            <IconUsers size={17} className="sidebar-icon shrink-0" />
+            {!collapsed && <span className="sidebar-text">Contactos CRM</span>}
           </NavLink>
 
-          {/* Módulos Condicionales A la Carta */}
           {hasModule('quotes') && (
-            <NavLink to="/quotes" className={navClass}>
-              <IconFileText size={18} className="sidebar-icon shrink-0" />
+            <NavLink to="/quotes" className={navClass} onClick={handleLinkClick}>
+              <IconFileText size={17} className="sidebar-icon shrink-0" />
               {!collapsed && <span className="sidebar-text">Cotizaciones</span>}
             </NavLink>
           )}
 
           {hasModule('dian_invoicing') && (
-            <NavLink to="/invoices" className={navClass}>
-              <IconFileInvoice size={18} className="sidebar-icon shrink-0" />
+            <NavLink to="/invoices" className={navClass} onClick={handleLinkClick}>
+              <IconFileInvoice size={17} className="sidebar-icon shrink-0" />
               {!collapsed && <span className="sidebar-text">Facturas DIAN</span>}
             </NavLink>
           )}
 
           {hasModule('inventory') && (
-            <NavLink to="/inventory" className={navClass}>
-              <IconPackages size={18} className="sidebar-icon shrink-0" />
+            <NavLink to="/inventory" className={navClass} onClick={handleLinkClick}>
+              <IconPackages size={17} className="sidebar-icon shrink-0" />
               {!collapsed && <span className="sidebar-text">Inventario</span>}
             </NavLink>
           )}
 
           {hasModule('purchases') && (
-            <NavLink to="/purchases" className={navClass}>
-              <IconShoppingCart size={18} className="sidebar-icon shrink-0" />
+            <NavLink to="/purchases" className={navClass} onClick={handleLinkClick}>
+              <IconShoppingCart size={17} className="sidebar-icon shrink-0" />
               {!collapsed && <span className="sidebar-text">Compras</span>}
             </NavLink>
           )}
 
           {hasModule('accounting') && (
-            <NavLink to="/accounting" className={navClass}>
-              <IconReceipt2 size={18} className="sidebar-icon shrink-0" />
+            <NavLink to="/accounting" className={navClass} onClick={handleLinkClick}>
+              <IconReceipt2 size={17} className="sidebar-icon shrink-0" />
               {!collapsed && <span className="sidebar-text">Contabilidad</span>}
             </NavLink>
           )}
 
           {(hasModule('ml_leads') || hasModule('ml_inventory')) && (
-            <NavLink to="/ml" className={navClass}>
-              <IconBrain size={18} className="sidebar-icon shrink-0" />
+            <NavLink to="/ml" className={navClass} onClick={handleLinkClick}>
+              <IconBrain
+                size={17}
+                className="sidebar-icon shrink-0"
+                style={{ color: 'var(--ml-accent)' }}
+              />
               {!collapsed && <span className="sidebar-text">Motor IA / ML</span>}
             </NavLink>
           )}
         </div>
 
         <div className="sidebar-section">
-          <div className="sidebar-section-title">
-            {!collapsed && <span>Configuración</span>}
-          </div>
-          <NavLink to="/modules" className={navClass}>
-            <IconApps size={18} className="sidebar-icon shrink-0 text-indigo-500" />
-            {!collapsed && <span className="sidebar-text font-medium">Herramientas</span>}
+          {!collapsed && <div className="sidebar-section-title">Sistema</div>}
+
+          <NavLink to="/modules" className={navClass} onClick={handleLinkClick}>
+            <IconApps size={17} className="sidebar-icon shrink-0" />
+            {!collapsed && <span className="sidebar-text">Módulos</span>}
           </NavLink>
+
           {user?.role === 'admin' && (
-            <NavLink to="/users" className={navClass}>
-              <IconUserPlus size={18} className="sidebar-icon shrink-0" />
-              {!collapsed && <span className="sidebar-text">Usuarios</span>}
+            <NavLink to="/users" className={navClass} onClick={handleLinkClick}>
+              <IconUserPlus size={17} className="sidebar-icon shrink-0" />
+              {!collapsed && <span className="sidebar-text">Usuarios y Roles</span>}
             </NavLink>
           )}
         </div>
       </nav>
 
       <div className="sidebar-footer">
-        <NavLink to="/profile" className={navClass}>
-          <IconUser size={18} className="sidebar-icon shrink-0" />
+        <NavLink to="/profile" className={navClass} onClick={handleLinkClick}>
+          <IconUser size={17} className="sidebar-icon shrink-0" />
           {!collapsed && <span className="sidebar-text">Mi Perfil</span>}
         </NavLink>
-        
+
         <ThemeToggle collapsed={collapsed} />
 
-        <button className="sidebar-item w-full text-left text-red-500 hover:text-red-600 hover:bg-red-500/10" onClick={logout}>
-          <IconLogout size={18} className="sidebar-icon shrink-0" />
+        <button
+          onClick={logout}
+          className="sidebar-item w-full text-left"
+          style={{ color: 'var(--status-danger-text)' }}
+          aria-label="Cerrar sesión"
+        >
+          <IconLogout size={17} className="sidebar-icon shrink-0" />
           {!collapsed && <span className="sidebar-text">Cerrar Sesión</span>}
         </button>
       </div>

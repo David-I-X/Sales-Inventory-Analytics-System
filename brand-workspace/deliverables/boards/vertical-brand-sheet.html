@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Vertical — Brand Identity Sheet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 1440px;
+      height: 900px;
+      background: #FFFFFF;
+      color: #09090B;
+      font-family: 'Geist', 'Inter', -apple-system, sans-serif;
+      padding: 40px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+    .mono { font-family: 'Geist Mono', monospace; font-variant-numeric: tabular-nums; }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 1px solid #E4E4E7;
+      padding-bottom: 18px;
+    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .panel {
+      border: 1px solid #E4E4E7;
+      border-radius: 12px;
+      padding: 24px;
+      background: #FAFAFA;
+    }
+    .panel-dark {
+      background: #09090B;
+      border-color: #27272A;
+      color: #FAFAFA;
+    }
+    .label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #63636E;
+      margin-bottom: 16px;
+    }
+    .panel-dark .label { color: #8E8E98; }
+    .swatch-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+    .swatch {
+      border: 1px solid #E4E4E7;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #FFFFFF;
+    }
+    .swatch-color { height: 58px; }
+    .swatch-info { padding: 10px 12px; }
+    .swatch-name { font-size: 12px; font-weight: 600; }
+    .swatch-hex { font-size: 11px; color: #63636E; margin-top: 2px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="mono" style="font-size:11px;color:#047857;font-weight:600;letter-spacing:0.06em;">DESIGN SYSTEM &amp; BRAND IDENTITY SPEC · FASE 0–3</div>
+      <h1 style="font-size:28px;font-weight:700;letter-spacing:-0.03em;margin-top:4px;">Vertical — Sistema Visual Bimodal (85 / 10 / 5)</h1>
+    </div>
+    <div class="mono" style="font-size:12px;color:#52525B;">Geist Sans + Geist Mono · WCAG 2.2 AA Verificado</div>
+  </div>
+
+  <!-- Logos Light & Dark -->
+  <div class="grid-2">
+    <div class="panel" style="background:#FFFFFF;display:flex;align-items:center;justify-content:space-between;height:190px;">
+      <div>
+        <div class="label">Logotipo Oficial · Light Mode (#09090B)</div>
+        <div style="display:flex;align-items:center;gap:14px;padding:14px 18px;border:1px dashed #D4D4D8;border-radius:10px;display:inline-flex;">
+          <svg width="40" height="40" viewBox="0 0 32 32" fill="none">
+            <path d="M4.5 9.95C4.5 9.28726 5.03726 8.75 5.7 8.75H9.3C9.96274 8.75 10.5 9.28726 10.5 9.95V21.25L4.5 15.25V9.95Z" fill="#09090B"/>
+            <path d="M13 13.95C13 13.2873 13.5373 12.75 14.2 12.75H17.8C18.4627 12.75 19 13.2873 19 13.95V23.75L16 26.75L13 23.75V13.95Z" fill="#09090B"/>
+            <path d="M21.5 6.45C21.5 5.78726 22.0373 5.25 22.7 5.25H26.3C26.9627 5.25 27.5 5.78726 27.5 6.45V15.25L21.5 21.25V6.45Z" fill="#09090B"/>
+          </svg>
+          <span style="font-size:30px;font-weight:700;letter-spacing:-0.03em;">Vertical</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+        <div class="label" style="margin-bottom:0">Isotipo (32 / 20px)</div>
+        <div style="display:flex;align-items:center;gap:16px;">
+          <svg width="36" height="36" viewBox="0 0 32 32" fill="none">
+            <path d="M4.5 9.95C4.5 9.28726 5.03726 8.75 5.7 8.75H9.3C9.96274 8.75 10.5 9.28726 10.5 9.95V21.25L4.5 15.25V9.95Z" fill="#09090B"/>
+            <path d="M13 13.95C13 13.2873 13.5373 12.75 14.2 12.75H17.8C18.4627 12.75 19 13.2873 19 13.95V23.75L16 26.75L13 23.75V13.95Z" fill="#09090B"/>
+            <path d="M21.5 6.45C21.5 5.78726 22.0373 5.25 22.7 5.25H26.3C26.9627 5.25 27.5 5.78726 27.5 6.45V15.25L21.5 21.25V6.45Z" fill="#09090B"/>
+          </svg>
+          <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
+            <path d="M4.5 9.95C4.5 9.28726 5.03726 8.75 5.7 8.75H9.3C9.96274 8.75 10.5 9.28726 10.5 9.95V21.25L4.5 15.25V9.95Z" fill="#09090B"/>
+            <path d="M13 13.95C13 13.2873 13.5373 12.75 14.2 12.75H17.8C18.4627 12.75 19 13.2873 19 13.95V23.75L16 26.75L13 23.75V13.95Z" fill="#09090B"/>
+            <path d="M21.5 6.45C21.5 5.78726 22.0373 5.25 22.7 5.25H26.3C26.9627 5.25 27.5 5.78726 27.5 6.45V15.25L21.5 21.25V6.45Z" fill="#09090B"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel panel-dark" style="display:flex;align-items:center;justify-content:space-between;height:190px;">
+      <div>
+        <div class="label">Logotipo Oficial · Dark Mode (#FAFAFA)</div>
+        <div style="display:flex;align-items:center;gap:14px;padding:14px 18px;border:1px dashed #3F3F46;border-radius:10px;display:inline-flex;">
+          <svg width="40" height="40" viewBox="0 0 32 32" fill="none">
+            <path d="M4.5 9.95C4.5 9.28726 5.03726 8.75 5.7 8.75H9.3C9.96274 8.75 10.5 9.28726 10.5 9.95V21.25L4.5 15.25V9.95Z" fill="#FAFAFA"/>
+            <path d="M13 13.95C13 13.2873 13.5373 12.75 14.2 12.75H17.8C18.4627 12.75 19 13.2873 19 13.95V23.75L16 26.75L13 23.75V13.95Z" fill="#FAFAFA"/>
+            <path d="M21.5 6.45C21.5 5.78726 22.0373 5.25 22.7 5.25H26.3C26.9627 5.25 27.5 5.78726 27.5 6.45V15.25L21.5 21.25V6.45Z" fill="#FAFAFA"/>
+          </svg>
+          <span style="font-size:30px;font-weight:700;letter-spacing:-0.03em;color:#FAFAFA">Vertical</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+        <div class="label" style="margin-bottom:0">Isotipo (32 / 20px)</div>
+        <div style="display:flex;align-items:center;gap:16px;">
+          <svg width="36" height="36" viewBox="0 0 32 32" fill="none">
+            <path d="M4.5 9.95C4.5 9.28726 5.03726 8.75 5.7 8.75H9.3C9.96274 8.75 10.5 9.28726 10.5 9.95V21.25L4.5 15.25V9.95Z" fill="#FAFAFA"/>
+            <path d="M13 13.95C13 13.2873 13.5373 12.75 14.2 12.75H17.8C18.4627 12.75 19 13.2873 19 13.95V23.75L16 26.75L13 23.75V13.95Z" fill="#FAFAFA"/>
+            <path d="M21.5 6.45C21.5 5.78726 22.0373 5.25 22.7 5.25H26.3C26.9627 5.25 27.5 5.78726 27.5 6.45V15.25L21.5 21.25V6.45Z" fill="#FAFAFA"/>
+          </svg>
+          <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
+            <path d="M4.5 9.95C4.5 9.28726 5.03726 8.75 5.7 8.75H9.3C9.96274 8.75 10.5 9.28726 10.5 9.95V21.25L4.5 15.25V9.95Z" fill="#FAFAFA"/>
+            <path d="M13 13.95C13 13.2873 13.5373 12.75 14.2 12.75H17.8C18.4627 12.75 19 13.2873 19 13.95V23.75L16 26.75L13 23.75V13.95Z" fill="#FAFAFA"/>
+            <path d="M21.5 6.45C21.5 5.78726 22.0373 5.25 22.7 5.25H26.3C26.9627 5.25 27.5 5.78726 27.5 6.45V15.25L21.5 21.25V6.45Z" fill="#FAFAFA"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Palette -->
+  <div>
+    <div class="label">Paleta Semántica &amp; Tokens (Monocromo Zinc + Esmeralda + Violeta ML)</div>
+    <div class="swatch-grid">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#FFFFFF;border-bottom:1px solid #E4E4E7;"></div>
+        <div class="swatch-info"><div class="swatch-name">Canvas Light</div><div class="swatch-hex mono">#FFFFFF</div></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#09090B;"></div>
+        <div class="swatch-info"><div class="swatch-name">Ink / Dark Canvas</div><div class="swatch-hex mono">#09090B · 19.9:1</div></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#047857;"></div>
+        <div class="swatch-info"><div class="swatch-name">Brand Solid (Light)</div><div class="swatch-hex mono">#047857 · 5.48:1 AA</div></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#10B981;"></div>
+        <div class="swatch-info"><div class="swatch-name">Brand (Dark / UI)</div><div class="swatch-hex mono">#10B981 · 7.84:1 AAA</div></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#7C3AED;"></div>
+        <div class="swatch-info"><div class="swatch-name">ML Accent (Light)</div><div class="swatch-hex mono">#7C3AED · 5.70:1 AA</div></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#8B5CF6;"></div>
+        <div class="swatch-info"><div class="swatch-name">ML Accent (Dark)</div><div class="swatch-hex mono">#8B5CF6 · 4.70:1 AA</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Typography & Components -->
+  <div class="grid-2" style="flex:1;">
+    <div class="panel">
+      <div class="label">Tipografía · Geist Sans &amp; Geist Mono (tabular-nums)</div>
+      <div style="font-size:26px;font-weight:700;letter-spacing:-0.03em;margin-bottom:8px;">Panel predictivo sin fricción</div>
+      <div style="font-size:14px;color:#52525B;line-height:1.5;margin-bottom:18px;">
+        CRM, inventarios, facturación electrónica DIAN/Factus y proyecciones de Machine Learning en una interfaz sobria y accionable.
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E4E4E7;border-radius:8px;padding:12px 14px;">
+        <div class="mono" style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0;">
+          <span style="color:#52525B;">FE-1048 · CUFE a8f4c19e</span>
+          <span style="font-weight:600;">$ 14.850.000</span>
+        </div>
+        <div class="mono" style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0;">
+          <span style="color:#52525B;">FE-1047 · CUFE 3d91b04a</span>
+          <span style="font-weight:600;">$ 04.120.500</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="label">Jerarquía de Componentes · Diferenciación Acción vs. DIAN vs. ML</div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <span style="background:#047857;color:#FFFFFF;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;">+ Nueva Factura DIAN</span>
+          <span style="background:#10B981;color:#09090B;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;">+ Nueva Factura (Dark)</span>
+          <span style="background:#FFFFFF;color:#09090B;border:1px solid #D4D4D8;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:500;">Exportar CSV</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="background:#ECFDF5;color:#065F46;border:1px solid #A7F3D0;padding:3px 9px;border-radius:6px;font-size:12px;font-weight:500;">✓ Validada DIAN</span>
+          <span style="background:#FFFBEB;color:#92400E;border:1px solid #FDE68A;padding:3px 9px;border-radius:6px;font-size:12px;font-weight:500;">◷ Stock bajo mínimo</span>
+          <span style="background:#F5F3FF;color:#6D28D9;border:1px solid #DDD6FE;padding:3px 9px;border-radius:6px;font-size:12px;font-weight:600;">✦ Proyección ML +16,8%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

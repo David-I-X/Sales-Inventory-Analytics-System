@@ -10,7 +10,7 @@ Capas de seguridad implementadas:
 import hashlib
 import logging
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import uuid4
 
@@ -18,6 +18,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.core.config import settings
@@ -48,13 +49,21 @@ def _hash_token(token: str) -> str:
     return hashlib.sha256(token.encode('utf-8')).hexdigest()
 
 
+def _ensure_utc(dt: Optional[datetime]) -> Optional[datetime]:
+    """Normaliza datetimes naive de BD a UTC-aware antes de operar o comparar."""
+    if dt is None:
+        return None
+    return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
+
+
 def create_access_token(user: User) -> tuple[str, str, datetime]:
     """
     Crea un Access Token JWT con JTI único.
     Retorna (token_string, jti, expires_at).
     """
     jti = str(uuid4())
-    expires_at = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    now = datetime.now(timezone.utc)
+    expires_at = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
         "sub": user.email,
         "tenant_id": user.tenant_id,
@@ -77,13 +86,15 @@ def create_refresh_token(user: User, session: Session, family_id: Optional[str] 
     if family_id is None:
         family_id = str(uuid4())
     
-    expires_at = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    now = datetime.now(timezone.utc)
+    expires_at = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     
     refresh = RefreshToken(
         token_hash=token_hash,
         user_id=user.id,
         family_id=family_id,
         expires_at=expires_at,
+        created_at=now,
     )
     session.add(refresh)
     session.flush()
@@ -98,7 +109,10 @@ def authenticate_user(email: str, password: str, session: Session) -> User:
     Autentica un usuario con email y password.
     Implementa protección anti brute-force con bloqueo temporal.
     """
-    user = session.exec(select(User).where(User.email == email)).first()
+    normalized_email = email.strip().lower()
+    user = session.exec(
+        select(User).where(func.lower(User.email) == normalized_email)
+    ).first()
     
     if not user:
         raise HTTPException(
@@ -112,16 +126,19 @@ def authenticate_user(email: str, password: str, session: Session) -> User:
             detail="Cuenta desactivada. Contacte al administrador."
         )
     
+    now = datetime.now(timezone.utc)
+    locked_until = _ensure_utc(user.locked_until)
+
     # Verificar bloqueo por brute-force
-    if user.locked_until and user.locked_until > datetime.utcnow():
-        remaining = (user.locked_until - datetime.utcnow()).seconds // 60 + 1
+    if locked_until and locked_until > now:
+        remaining = int((locked_until - now).total_seconds()) // 60 + 1
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Cuenta bloqueada por demasiados intentos fallidos. Intente en {remaining} minutos."
         )
     
     # Si el bloqueo expiró, resetear
-    if user.locked_until and user.locked_until <= datetime.utcnow():
+    if locked_until and locked_until <= now:
         user.failed_login_attempts = 0
         user.locked_until = None
     
@@ -130,10 +147,10 @@ def authenticate_user(email: str, password: str, session: Session) -> User:
         user.failed_login_attempts += 1
         
         if user.failed_login_attempts >= settings.MAX_LOGIN_ATTEMPTS:
-            user.locked_until = datetime.utcnow() + timedelta(minutes=settings.LOCKOUT_MINUTES)
+            user.locked_until = now + timedelta(minutes=settings.LOCKOUT_MINUTES)
             session.add(user)
             session.commit()
-            logger.warning(f"[Auth] Cuenta {email} BLOQUEADA por {settings.LOCKOUT_MINUTES} min tras {user.failed_login_attempts} intentos")
+            logger.warning(f"[Auth] Cuenta {normalized_email} BLOQUEADA por {settings.LOCKOUT_MINUTES} min tras {user.failed_login_attempts} intentos")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Cuenta bloqueada por {settings.LOCKOUT_MINUTES} minutos tras {settings.MAX_LOGIN_ATTEMPTS} intentos fallidos."
@@ -142,7 +159,7 @@ def authenticate_user(email: str, password: str, session: Session) -> User:
         session.add(user)
         session.commit()
         remaining_attempts = settings.MAX_LOGIN_ATTEMPTS - user.failed_login_attempts
-        logger.info(f"[Auth] Login fallido para {email}. Intentos restantes: {remaining_attempts}")
+        logger.info(f"[Auth] Login fallido para {normalized_email}. Intentos restantes: {remaining_attempts}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales inválidas"
@@ -154,7 +171,7 @@ def authenticate_user(email: str, password: str, session: Session) -> User:
     session.add(user)
     session.flush()
     
-    logger.info(f"[Auth] Login exitoso para {email}")
+    logger.info(f"[Auth] Login exitoso para {user.email}")
     return user
 
 
@@ -201,7 +218,8 @@ def rotate_refresh_token(raw_token: str, session: Session) -> tuple[User, str]:
         )
     
     # Verificar expiración
-    if stored.expires_at < datetime.utcnow():
+    expires_at = _ensure_utc(stored.expires_at)
+    if expires_at and expires_at < datetime.now(timezone.utc):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token expirado. Inicie sesión nuevamente."

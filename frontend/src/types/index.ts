@@ -4,9 +4,24 @@ export interface User {
   full_name: string;
   role: 'admin' | 'viewer';
   tenant_id: number;
+  tenant_name?: string;
   enabled_modules?: string[];
   is_active: boolean;
   created_at: string;
+}
+
+export interface CompanySignupPayload {
+  company_name: string;
+  business_profile: 'services' | 'complete';
+  full_name: string;
+  email: string;
+  password: string;
+}
+
+export interface CompanySignupResponse extends TokenPair {
+  tenant_id: number;
+  tenant_name: string;
+  user_email: string;
 }
 
 export type ModuleSettingValue = string | number | boolean;
